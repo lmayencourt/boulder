@@ -64,10 +64,12 @@ fn follow_mouse(
     keys: Res<ButtonInput<KeyCode>>,
     window: Single<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
-    mut q_left_hand: Query<(&mut Transform, &mut Velocity), With<LeftHand>>,
-    mut q_right_hand: Query<(&mut Transform, &mut Velocity), (With<RightHand>, Without<LeftHand>)>,
+    mut q_body: Query<&mut Transform, With<Body>>,
+    mut q_left_hand: Query<(&mut Transform, &mut Velocity), (With<LeftHand>, Without<Body>)>,
+    mut q_right_hand: Query<(&mut Transform, &mut Velocity), (With<RightHand>, Without<LeftHand>, Without<Body>)>,
     // mut head: Single<&mut Transform, (With<Head>, Without<LeftHand>, Without<RightHand>)>,
     // mut tail: Single<&mut Transform, (With<Tail>, Without<LeftHand>, Without<RightHand>, Without<Head>)>,
+    mut gizmos: Gizmos,
 ) {
     // if !buttons.pressed(MouseButton::Left) || !keys.pressed(KeyCode::KeyA) {
     if keys.pressed(KeyCode::KeyA) {
@@ -84,15 +86,30 @@ fn follow_mouse(
                 }
             })
         {
+            gizmos.circle_2d(world_position, 5.0, Color::srgb(1.0, 0.0, 1.0));
             // println!("World position: {:?}", world_position);
 
             let mut hand_transform = q_left_hand.single_mut().unwrap();
-            hand_transform.0.translation.x = world_position.x;
-            hand_transform.0.translation.y = world_position.y;
-            hand_transform.1.linvel = Vec2::new(0.0, 0.0);
+            let body = q_body.single_mut().unwrap();
 
-            // head.translation.x = world_position.x;
-            // head.translation.y = world_position.y;
+            let body_pointer_distance = body.translation.distance(world_position.extend(0.0));
+
+            let ray = Ray2d {
+                    origin: body.translation.truncate(),
+                    direction: Dir2::new_unchecked((world_position - body.translation.truncate()).normalize()),
+                };
+            gizmos.ray_2d(ray.origin, *ray.direction*ARM_LENGTH, Color::srgb(1.0, 1.0, 0.0));
+
+            if body_pointer_distance > ARM_LENGTH {
+                let new_position = ray.origin + *ray.direction * ARM_LENGTH;
+                hand_transform.0.translation.x = new_position.x;
+                hand_transform.0.translation.y = new_position.y;
+            } else {
+                hand_transform.0.translation.x = world_position.x;
+                hand_transform.0.translation.y = world_position.y;
+            }
+
+            hand_transform.1.linvel = Vec2::new(0.0, 0.0);
         }
     }
 
@@ -111,15 +128,28 @@ fn follow_mouse(
                 }
             })
         {
+            gizmos.circle_2d(world_position, 5.0, Color::srgb(1.0, 0.0, 1.0));
             // println!("World position: {:?}", world_position);
 
             let mut hand_transform = q_right_hand.single_mut().unwrap();
-            hand_transform.0.translation.x = world_position.x;
-            hand_transform.0.translation.y = world_position.y;
-            hand_transform.1.linvel = Vec2::new(0.0, 0.0);
+            let body = q_body.single_mut().unwrap();
 
-            // tail.translation.x = world_position.x;
-            // tail.translation.y = world_position.y;
+            let body_pointer_distance = body.translation.distance(world_position.extend(0.0));
+
+            let ray = Ray2d {
+                    origin: body.translation.truncate(),
+                    direction: Dir2::new_unchecked((world_position - body.translation.truncate()).normalize()),
+                };
+            gizmos.ray_2d(ray.origin, *ray.direction, Color::srgb(1.0, 1.0, 0.0));
+
+            if body_pointer_distance > ARM_LENGTH {
+                let new_position = ray.origin + *ray.direction * ARM_LENGTH;
+                hand_transform.0.translation.x = new_position.x;
+                hand_transform.0.translation.y = new_position.y;
+            } else {
+                hand_transform.0.translation.x = world_position.x;
+                hand_transform.0.translation.y = world_position.y;
+            }
         }
     }
 }

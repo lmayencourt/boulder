@@ -12,6 +12,12 @@ pub struct LeftHand;
 #[derive(Component)]
 pub struct RightHand;
 
+#[derive(Component)]
+pub struct RightShoulder;
+
+#[derive(Component)]
+pub struct LeftShoulder;
+
 // impl Hand {
     pub fn spawn(
         commands: &mut Commands,

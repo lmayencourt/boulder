@@ -10,7 +10,7 @@ use crate::hand::{LeftHand, RightHand};
 
 static BODY_WIDTH: f32 = 40.0;
 static BODY_HEIGHT: f32 = 50.0;
-static ARM_LENGTH: f32 = 80.0;
+pub static ARM_LENGTH: f32 = 80.0;
 
 static PHY_TO_PIX: f32 = 1.0;
 static BODY_WIDTH_PHY: f32 = 40.0 / PHY_TO_PIX;
@@ -41,7 +41,7 @@ impl Body {
             Pickable::IGNORE,
             RigidBody::Dynamic,
             Collider::capsule(vec2(0.0, -BODY_HEIGHT/2.0), vec2(0.0, BODY_HEIGHT/2.0), BODY_WIDTH/2.0),
-            // RigidBody::default(),
+            ColliderMassProperties::Density(4.0)
         )).id();
 
         // Right arm
@@ -73,6 +73,7 @@ impl Body {
             .local_anchor1(Vec2::ZERO)
             // hand anchor
             .local_anchor2(Vec2::new(ARM_LENGTH_PHY/2.0, 0.0))
+            // .limits([0.0, 180.0_f32.to_radians()])
             .build();
         commands.entity(elbow).insert(ImpulseJoint::new(hand, elbow_joint));
 
@@ -81,6 +82,7 @@ impl Body {
             .local_anchor1(Vec2::new(0.0, 0.0))
             // shoulder anchor
             .local_anchor2(Vec2::new(ARM_LENGTH_PHY/2.0, 0.0))
+            // .limits([0.0, 180.0_f32.to_radians()])
             .build();
         commands.entity(body).insert(ImpulseJoint::new(elbow, shoulder_joint));
 
@@ -102,6 +104,7 @@ impl Body {
             .local_anchor1(Vec2::new(-ARM_LENGTH_PHY/2.0, BODY_HEIGHT/2.0))
             // elbow anchor
             .local_anchor2(Vec2::ZERO)
+            // .limits([0.0, 180.0_f32.to_radians()])
             .build();
         commands.entity(elbow).insert(ImpulseJoint::new(body, shoulder_joint));
 
@@ -120,6 +123,7 @@ impl Body {
             .local_anchor1(Vec2::new(-ARM_LENGTH_PHY/2.0, 0.0))
             // elbow anchor
             .local_anchor2(Vec2::ZERO)
+            // .limits([0.0, 180.0_f32.to_radians()])
             .build();
         commands.entity(hand).insert(ImpulseJoint::new(elbow, elbow_joint));
 
@@ -127,14 +131,14 @@ impl Body {
 }
 
 pub fn movement(
-    mut query: Query<&mut Transform, With<Body>>,
-    q_l_hand: Query<&Transform, (With<LeftHand>, Without<Body>)>,
-    q_r_hand: Query<&Transform, (With<RightHand>, Without<Body>, Without<LeftHand>)>,
+    mut q_body: Query<&mut Transform, With<Body>>,
+    mut q_l_hand: Query<&mut Transform, (With<LeftHand>, Without<Body>)>,
+    mut q_r_hand: Query<&mut Transform, (With<RightHand>, Without<Body>, Without<LeftHand>)>,
     time: Res<Time>,
 ) {
     let delta_t = time.delta_secs();
 
-    let mut transform = query.single_mut().unwrap();
+    let mut body = q_body.single_mut().unwrap();
 
     // if transform.translation.y <= -200.0 {
     //     transform.translation.y = -200.0;
@@ -144,8 +148,19 @@ pub fn movement(
     // }
 
     // Restrict the position at a maximum distance from the hands
-    // let l_hand_transform = q_l_hand.single().unwrap();
-    // let r_hand_transform = q_r_hand.single().unwrap();
+    let mut l_hand_transform = q_l_hand.single_mut().unwrap();
+    let mut r_hand_transform = q_r_hand.single_mut().unwrap();
 
+    let l_hand_distance = body.translation.distance(l_hand_transform.translation);
+    if l_hand_distance > ARM_LENGTH {
+        let direction = Dir3::new_unchecked((body.translation - l_hand_transform.translation).normalize());
+        l_hand_transform.translation = body.translation + direction * ARM_LENGTH;
+    }
+
+    // let r_hand_distance = body.translation.distance(r_hand_transform.translation);
+    // if r_hand_distance > ARM_LENGTH {
+    //     let direction = Dir3::new_unchecked((body.translation - r_hand_transform.translation).normalize());
+    //     r_hand_transform.translation = body.translation + direction * ARM_LENGTH;
+    // }
     
 }
