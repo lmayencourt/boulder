@@ -1,3 +1,7 @@
+/* SPDX-License-Identifier: MIT
+* Copyright (c) 2024 Louis Mayencourt
+*/
+
 use bevy::{
     prelude::*,
     color::palettes::tailwind::*,

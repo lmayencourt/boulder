@@ -1,3 +1,7 @@
+/* SPDX-License-Identifier: MIT
+* Copyright (c) 2024 Louis Mayencourt
+*/
+
 use bevy::{
     prelude::*,
     window::PrimaryWindow,
@@ -7,11 +11,13 @@ use bevy_rapier2d::prelude::*;
 mod body;
 mod hand;
 mod holds;
+mod mouse;
 // mod physics;
 
 use body::*;
 use hand::*;
 use holds::*;
+use mouse::*;
 // use physics::*;
 
 fn main() {
@@ -21,6 +27,7 @@ fn main() {
         // .add_plugins(PhysicsPlugin)
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_plugins(RapierDebugRenderPlugin::default())
+        .add_plugins(MousePlugin)
         .insert_resource(holds::LeftHandOnHold(false))
         .insert_resource(holds::RightHandOnHold(false))
         .add_systems(Startup, setup_system)
@@ -58,15 +65,10 @@ fn setup_system(
     ));
 }
 
-/// Used to help identify our main camera
-#[derive(Component)]
-struct MainCamera;
-
 fn follow_mouse(
     buttons: Res<ButtonInput<MouseButton>>,
     keys: Res<ButtonInput<KeyCode>>,
-    window: Single<&Window, With<PrimaryWindow>>,
-    q_camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
+    mouse_position: Res<MousePosition>,
     mut q_body: Query<&mut Transform, With<Body>>,
     mut q_left_hand: Query<(&mut Transform, &mut Velocity), (With<LeftHand>, Without<Body>)>,
     mut q_right_hand: Query<(&mut Transform, &mut Velocity), (With<RightHand>, Without<LeftHand>, Without<Body>)>,
@@ -76,84 +78,45 @@ fn follow_mouse(
 ) {
     // if !buttons.pressed(MouseButton::Left) || !keys.pressed(KeyCode::KeyA) {
     if keys.pressed(KeyCode::KeyA) {
+        let mut hand_transform = q_left_hand.single_mut().unwrap();
+        let body = q_body.single().unwrap();
 
-        let (camera, camera_transform) = q_camera.single().unwrap();
+        update_hand_position(body, &mut hand_transform.0, &mouse_position.world_position, &mut gizmos);
 
-        if let Some(world_position) = window
-            .cursor_position()
-            .and_then(|cursor| {
-            let err = camera.viewport_to_world_2d(camera_transform, cursor);
-                match err {
-                    Ok(pos) => Some(pos),
-                    Err(_) => None,
-                }
-            })
-        {
-            gizmos.circle_2d(world_position, 5.0, Color::srgb(1.0, 0.0, 1.0));
-            // println!("World position: {:?}", world_position);
-
-            let mut hand_transform = q_left_hand.single_mut().unwrap();
-            let body = q_body.single_mut().unwrap();
-
-            let body_pointer_distance = body.translation.distance(world_position.extend(0.0));
-
-            let ray = Ray2d {
-                    origin: body.translation.truncate(),
-                    direction: Dir2::new_unchecked((world_position - body.translation.truncate()).normalize()),
-                };
-            gizmos.ray_2d(ray.origin, *ray.direction*ARM_LENGTH, Color::srgb(1.0, 1.0, 0.0));
-
-            if body_pointer_distance > ARM_LENGTH {
-                let new_position = ray.origin + *ray.direction * ARM_LENGTH;
-                hand_transform.0.translation.x = new_position.x;
-                hand_transform.0.translation.y = new_position.y;
-            } else {
-                hand_transform.0.translation.x = world_position.x;
-                hand_transform.0.translation.y = world_position.y;
-            }
-
-            hand_transform.1.linvel = Vec2::new(0.0, 0.0);
-        }
+        hand_transform.1.linvel = Vec2::new(0.0, 0.0);
     }
 
     // if !buttons.pressed(MouseButton::Right) || !keys.pressed(KeyCode::KeyS) {
     if keys.pressed(KeyCode::KeyS) {
 
-        let (camera, camera_transform) = q_camera.single().unwrap();
+        let mut hand_transform = q_right_hand.single_mut().unwrap();
+        let body = q_body.single().unwrap();
 
-        if let Some(world_position) = window
-            .cursor_position()
-            .and_then(|cursor| {
-            let err = camera.viewport_to_world_2d(camera_transform, cursor);
-                match err {
-                    Ok(pos) => Some(pos),
-                    Err(_) => None,
-                }
-            })
-        {
-            gizmos.circle_2d(world_position, 5.0, Color::srgb(1.0, 0.0, 1.0));
-            // println!("World position: {:?}", world_position);
+        update_hand_position(body, &mut hand_transform.0, &mouse_position.world_position, &mut gizmos);
+    }
+}
 
-            let mut hand_transform = q_right_hand.single_mut().unwrap();
-            let body = q_body.single_mut().unwrap();
+fn update_hand_position(
+    body: &Transform,
+    hand_transform: &mut Transform,
+    mouse_position: &Vec2,
+    gizmos: &mut Gizmos,
+) {
+    let body_pointer_distance = body.translation.distance(mouse_position.extend(0.0));
 
-            let body_pointer_distance = body.translation.distance(world_position.extend(0.0));
+    let ray = Ray2d {
+            origin: body.translation.truncate(),
+            direction: Dir2::new_unchecked((mouse_position - body.translation.truncate()).normalize()),
+        };
+    gizmos.ray_2d(ray.origin, *ray.direction, Color::srgb(1.0, 1.0, 0.0));
 
-            let ray = Ray2d {
-                    origin: body.translation.truncate(),
-                    direction: Dir2::new_unchecked((world_position - body.translation.truncate()).normalize()),
-                };
-            gizmos.ray_2d(ray.origin, *ray.direction, Color::srgb(1.0, 1.0, 0.0));
-
-            if body_pointer_distance > ARM_LENGTH {
-                let new_position = ray.origin + *ray.direction * ARM_LENGTH;
-                hand_transform.0.translation.x = new_position.x;
-                hand_transform.0.translation.y = new_position.y;
-            } else {
-                hand_transform.0.translation.x = world_position.x;
-                hand_transform.0.translation.y = world_position.y;
-            }
-        }
+    if body_pointer_distance > ARM_LENGTH {
+        let new_position = ray.origin + *ray.direction * ARM_LENGTH;
+        hand_transform.translation.x = new_position.x;
+        hand_transform.translation.y = new_position.y;
+    } else {
+        hand_transform.translation.x = mouse_position.x;
+        hand_transform.translation.y = mouse_position.y;
     }
 }
 
