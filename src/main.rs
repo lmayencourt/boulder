@@ -21,9 +21,12 @@ fn main() {
         // .add_plugins(PhysicsPlugin)
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_plugins(RapierDebugRenderPlugin::default())
+        .insert_resource(holds::LeftHandOnHold(false))
+        .insert_resource(holds::RightHandOnHold(false))
         .add_systems(Startup, setup_system)
         // .add_systems(Startup, setup_chain)
         .add_systems(Update, follow_mouse)
+        .add_systems(Update, hand_on_holds_detection)
         // .add_systems(Update, body::movement)
         .run();
 }
@@ -67,8 +70,8 @@ fn follow_mouse(
     mut q_body: Query<&mut Transform, With<Body>>,
     mut q_left_hand: Query<(&mut Transform, &mut Velocity), (With<LeftHand>, Without<Body>)>,
     mut q_right_hand: Query<(&mut Transform, &mut Velocity), (With<RightHand>, Without<LeftHand>, Without<Body>)>,
-    // mut head: Single<&mut Transform, (With<Head>, Without<LeftHand>, Without<RightHand>)>,
-    // mut tail: Single<&mut Transform, (With<Tail>, Without<LeftHand>, Without<RightHand>, Without<Head>)>,
+    mut r_r_hand_on_hold: ResMut<RightHandOnHold>,
+    mut r_l_hand_on_hold: ResMut<LeftHandOnHold>,
     mut gizmos: Gizmos,
 ) {
     // if !buttons.pressed(MouseButton::Left) || !keys.pressed(KeyCode::KeyA) {
