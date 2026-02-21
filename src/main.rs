@@ -80,13 +80,6 @@ fn follow_mouse(
 ) {
     // if !buttons.pressed(MouseButton::Left) || !keys.pressed(KeyCode::KeyA) {
     let mut hand_transform = q_left_hand.single_mut().unwrap();
-    // if keys.pressed(KeyCode::KeyA) {
-    //     let body = q_body.single().unwrap();
-
-    //     update_hand_position(body, &mut hand_transform.0, &mouse_position.world_position, &mut gizmos);
-
-    //     hand_transform.1.linvel = Vec2::new(0.0, 0.0);
-    // }
     if keys.just_pressed(KeyCode::KeyA) {
         println!("Disable gravity on left hand");
         hand::disable_gravity(&mut commands, hand_transform.2);
@@ -95,20 +88,19 @@ fn follow_mouse(
     if keys.pressed(KeyCode::KeyA) {
         let body = q_body.single().unwrap();
 
-        update_hand_position(body, &mut hand_transform.0, &mouse_position.world_position, &mut gizmos);
-        hand_transform.1.linvel = Vec2::new(0.0, 0.0);
-
+        update_hand_position(body, &hand_transform.0, &mut hand_transform.1, &mouse_position.world_position, &mut gizmos);
+        // hand_transform.1.linvel = Vec2::new(0.0, 0.0);
     }
 
     if keys.just_released(KeyCode::KeyA) {
         if r_l_hand_on_hold.0 {
-            // hand::disable_gravity(&mut commands, hand_transform.2);
             println!("Grabbing hold with left hand");
         } else {
             hand::enable_gravity(&mut commands, hand_transform.2);
             println!("Releasing left hand from hold");
         }
-        hand_transform.1.linvel = Vec2::new(0.0, 0.0);
+        hand_transform.1.linvel = Vec2::ZERO;
+        hand_transform.1.angvel = 0.0;
     }
 
     // if !buttons.pressed(MouseButton::Right) || !keys.pressed(KeyCode::KeyS) {
@@ -122,26 +114,37 @@ fn follow_mouse(
     if keys.pressed(KeyCode::KeyS) {
         let body = q_body.single().unwrap();
 
-        update_hand_position(body, &mut hand_transform.0, &mouse_position.world_position, &mut gizmos);
-        hand_transform.1.linvel = Vec2::new(0.0, 0.0);
-
+        update_hand_position(body, &hand_transform.0, &mut hand_transform.1, &mouse_position.world_position, &mut gizmos);
+        // hand_transform.1.linvel = Vec2::new(0.0, 0.0);
     }
 
     if keys.just_released(KeyCode::KeyS) {
         if r_r_hand_on_hold.0 {
-            // hand::disable_gravity(&mut commands, hand_transform.2);
             println!("Grabbing hold with right hand");
         } else {
             hand::enable_gravity(&mut commands, hand_transform.2);
             println!("Releasing right hand from hold");
         }
-        hand_transform.1.linvel = Vec2::new(0.0, 0.0);
+        hand_transform.1.linvel = Vec2::ZERO;
+        hand_transform.1.angvel = 0.0;
     }
+
+    // Hand can not overlap
+    // let mut left_hand = q_left_hand.single_mut().unwrap();
+    // let mut right_hand = q_right_hand.single_mut().unwrap();
+
+    // if left_hand.0.translation.x > right_hand.0.translation.x {
+    //     left_hand.0.translation.x = right_hand.0.translation.x;
+    // }
+    // if right_hand.0.translation.x < left_hand.0.translation.x {
+    //     right_hand.0.translation.x = left_hand.0.translation.x;
+    // }
 }
 
 fn update_hand_position(
     body: &Transform,
-    hand_transform: &mut Transform,
+    hand_transform: &Transform,
+    hand_velocity: &mut Velocity,
     mouse_position: &Vec2,
     gizmos: &mut Gizmos,
 ) {
@@ -155,14 +158,15 @@ fn update_hand_position(
 
         let new_position = ray.origin + *ray.direction * ARM_LENGTH;
         
-        reach_smoothly_target(hand_transform, new_position, gizmos);
+        reach_smoothly_target(hand_transform, hand_velocity, new_position, gizmos);
     } else {
-        reach_smoothly_target(hand_transform, *mouse_position, gizmos);
+        reach_smoothly_target(hand_transform, hand_velocity, *mouse_position, gizmos);
     }
 }
 
 fn reach_smoothly_target(
-    hand_transform: &mut Transform,
+    hand_transform: &Transform,
+    hand_velocity: &mut Velocity,
     target_position: Vec2,
     gizmos: &mut Gizmos,
 ) {
@@ -173,7 +177,7 @@ fn reach_smoothly_target(
     };
     gizmos.ray_2d(ray.origin, *ray.direction * hand_target_distance, Color::srgb(1.0, 1.0, 0.0));
 
-    hand_transform.translation = (ray.origin + ray.direction * hand_target_distance/6.0).extend(0.0);
+    hand_velocity.linvel = ray.direction * hand_target_distance.min(ARM_LENGTH/2.0) * 8.0;
 }
 
 #[derive(Component)]

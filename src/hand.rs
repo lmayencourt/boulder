@@ -63,5 +63,5 @@ pub fn disable_gravity(
     hand: Entity,
 ) {
     commands.entity(hand).remove::<RigidBody>();
-    commands.entity(hand).insert(RigidBody::KinematicPositionBased);
+    commands.entity(hand).insert(RigidBody::KinematicVelocityBased);
 }

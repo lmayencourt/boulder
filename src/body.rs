@@ -45,7 +45,10 @@ impl Body {
             Pickable::IGNORE,
             RigidBody::Dynamic,
             Collider::capsule(vec2(0.0, -BODY_HEIGHT/2.0), vec2(0.0, BODY_HEIGHT/2.0), BODY_WIDTH/2.0),
-            ColliderMassProperties::Density(4.0)
+            // Collider::ball(BODY_WIDTH/2.0),
+            // Collider::cuboid(15.0, 50.0),
+            // Collider::capsule(vec2(0.0, -BODY_HEIGHT/2.0), vec2(0.0, BODY_HEIGHT), BODY_WIDTH/2.0),
+            ColliderMassProperties::Density(8.0)
         )).id();
 
         // Right arm
