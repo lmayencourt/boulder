@@ -77,6 +77,8 @@ pub fn hand_on_holds_detection(
     let default_matl = materials.add(Color::from(GRAY_300));
     let hover_matl = materials.add(Color::from(CYAN_300));
 
+    let mut l_hand_on_any_hold = false;
+    let mut r_hand_on_any_hold = false;
     for (mut material, transform) in q_holds.iter_mut() {
         let l_hand_on_hold = is_hand_on_hold(q_l_hand.single().unwrap(), transform);
         let r_hand_on_hold = is_hand_on_hold(q_r_hand.single().unwrap(), transform);
@@ -88,13 +90,17 @@ pub fn hand_on_holds_detection(
         }
 
         if l_hand_on_hold {
-            r_l_hand_on_hold.0 = true;
+            l_hand_on_any_hold = true;
         }
         if r_hand_on_hold {
-            r_r_hand_on_hold.0 = true;
+            r_hand_on_any_hold = true;
         }
 
     }
+    r_l_hand_on_hold.0 = l_hand_on_any_hold;
+    r_r_hand_on_hold.0 = r_hand_on_any_hold;
+
+    // println!("Left hand on hold: {}, Right hand on hold: {}", r_l_hand_on_hold.0, r_r_hand_on_hold.0);
 }
 
 fn is_hand_on_hold(

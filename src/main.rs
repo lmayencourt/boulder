@@ -7,6 +7,7 @@ use bevy::{
     window::PrimaryWindow,
 };
 use bevy_rapier2d::prelude::*;
+use rand::prelude::*;
 
 mod body;
 mod hand;
@@ -47,9 +48,9 @@ fn setup_system(
     commands.spawn((Camera2d, MainCamera));
 
     // Spwan a few shapes randomly on the screen
-    for i in 0..5 {
-        let x = (i as f32 - 2.0) * 100.0;
-        let y = (i as f32 - 2.0) * 50.0;
+    for i in 0..20 {
+        let x = rand::rng().random_range(-400.0..400.0);
+        let y = rand::rng().random_range(-200.0..200.0);
 
         let hold = Hold::new(Vec2::new(x, y));
         hold.spawn(&mut commands, &mut meshes, &mut materials);
@@ -70,29 +71,71 @@ fn follow_mouse(
     keys: Res<ButtonInput<KeyCode>>,
     mouse_position: Res<MousePosition>,
     mut q_body: Query<&mut Transform, With<Body>>,
-    mut q_left_hand: Query<(&mut Transform, &mut Velocity), (With<LeftHand>, Without<Body>)>,
-    mut q_right_hand: Query<(&mut Transform, &mut Velocity), (With<RightHand>, Without<LeftHand>, Without<Body>)>,
+    mut q_left_hand: Query<(&mut Transform, &mut Velocity, Entity), (With<LeftHand>, Without<Body>)>,
+    mut q_right_hand: Query<(&mut Transform, &mut Velocity, Entity), (With<RightHand>, Without<LeftHand>, Without<Body>)>,
     mut r_r_hand_on_hold: ResMut<RightHandOnHold>,
     mut r_l_hand_on_hold: ResMut<LeftHandOnHold>,
     mut gizmos: Gizmos,
+    mut commands: Commands,
 ) {
     // if !buttons.pressed(MouseButton::Left) || !keys.pressed(KeyCode::KeyA) {
+    let mut hand_transform = q_left_hand.single_mut().unwrap();
+    // if keys.pressed(KeyCode::KeyA) {
+    //     let body = q_body.single().unwrap();
+
+    //     update_hand_position(body, &mut hand_transform.0, &mouse_position.world_position, &mut gizmos);
+
+    //     hand_transform.1.linvel = Vec2::new(0.0, 0.0);
+    // }
+    if keys.just_pressed(KeyCode::KeyA) {
+        println!("Disable gravity on left hand");
+        hand::disable_gravity(&mut commands, hand_transform.2);
+    }
+
     if keys.pressed(KeyCode::KeyA) {
-        let mut hand_transform = q_left_hand.single_mut().unwrap();
         let body = q_body.single().unwrap();
 
         update_hand_position(body, &mut hand_transform.0, &mouse_position.world_position, &mut gizmos);
+        hand_transform.1.linvel = Vec2::new(0.0, 0.0);
 
+    }
+
+    if keys.just_released(KeyCode::KeyA) {
+        if r_l_hand_on_hold.0 {
+            // hand::disable_gravity(&mut commands, hand_transform.2);
+            println!("Grabbing hold with left hand");
+        } else {
+            hand::enable_gravity(&mut commands, hand_transform.2);
+            println!("Releasing left hand from hold");
+        }
         hand_transform.1.linvel = Vec2::new(0.0, 0.0);
     }
 
     // if !buttons.pressed(MouseButton::Right) || !keys.pressed(KeyCode::KeyS) {
-    if keys.pressed(KeyCode::KeyS) {
+    let mut hand_transform = q_right_hand.single_mut().unwrap();
 
-        let mut hand_transform = q_right_hand.single_mut().unwrap();
+    if keys.just_pressed(KeyCode::KeyS) {
+        println!("Disable gravity on right hand");
+        hand::disable_gravity(&mut commands, hand_transform.2);
+    }
+
+    if keys.pressed(KeyCode::KeyS) {
         let body = q_body.single().unwrap();
 
         update_hand_position(body, &mut hand_transform.0, &mouse_position.world_position, &mut gizmos);
+        hand_transform.1.linvel = Vec2::new(0.0, 0.0);
+
+    }
+
+    if keys.just_released(KeyCode::KeyS) {
+        if r_r_hand_on_hold.0 {
+            // hand::disable_gravity(&mut commands, hand_transform.2);
+            println!("Grabbing hold with right hand");
+        } else {
+            hand::enable_gravity(&mut commands, hand_transform.2);
+            println!("Releasing right hand from hold");
+        }
+        hand_transform.1.linvel = Vec2::new(0.0, 0.0);
     }
 }
 

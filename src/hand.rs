@@ -6,6 +6,7 @@ use bevy::{
     prelude::*,
     color::palettes::tailwind::*,
 };
+use bevy_rapier2d::prelude::*;
 
 // #[derive(Component)]
 // pub struct Hand;
@@ -48,3 +49,19 @@ pub struct LeftShoulder;
             // .observe(update_material_on::<Pointer<Out>>(default_matl.clone()));
     }
 // }
+
+pub fn enable_gravity(
+    mut commands: &mut Commands,
+    hand: Entity,
+) {
+    commands.entity(hand).remove::<RigidBody>();
+    commands.entity(hand).insert(RigidBody::Dynamic);
+}
+
+pub fn disable_gravity(
+    mut commands: &mut Commands,
+    hand: Entity,
+) {
+    commands.entity(hand).remove::<RigidBody>();
+    commands.entity(hand).insert(RigidBody::KinematicPositionBased);
+}
