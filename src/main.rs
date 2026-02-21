@@ -147,20 +147,33 @@ fn update_hand_position(
 ) {
     let body_pointer_distance = body.translation.distance(mouse_position.extend(0.0));
 
-    let ray = Ray2d {
-            origin: body.translation.truncate(),
-            direction: Dir2::new_unchecked((mouse_position - body.translation.truncate()).normalize()),
-        };
-    gizmos.ray_2d(ray.origin, *ray.direction, Color::srgb(1.0, 1.0, 0.0));
-
     if body_pointer_distance > ARM_LENGTH {
+        let ray = Ray2d {
+                origin: body.translation.truncate(),
+                direction: Dir2::new_unchecked((mouse_position - body.translation.truncate()).normalize()),
+            };
+
         let new_position = ray.origin + *ray.direction * ARM_LENGTH;
-        hand_transform.translation.x = new_position.x;
-        hand_transform.translation.y = new_position.y;
+        
+        reach_smoothly_target(hand_transform, new_position, gizmos);
     } else {
-        hand_transform.translation.x = mouse_position.x;
-        hand_transform.translation.y = mouse_position.y;
+        reach_smoothly_target(hand_transform, *mouse_position, gizmos);
     }
+}
+
+fn reach_smoothly_target(
+    hand_transform: &mut Transform,
+    target_position: Vec2,
+    gizmos: &mut Gizmos,
+) {
+    let hand_target_distance = hand_transform.translation.distance(target_position.extend(0.0));
+    let ray = Ray2d {
+        origin: hand_transform.translation.truncate(),
+        direction: Dir2::new_unchecked((target_position - hand_transform.translation.truncate()).normalize()),
+    };
+    gizmos.ray_2d(ray.origin, *ray.direction * hand_target_distance, Color::srgb(1.0, 1.0, 0.0));
+
+    hand_transform.translation = (ray.origin + ray.direction * hand_target_distance/6.0).extend(0.0);
 }
 
 #[derive(Component)]
