@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: MIT
-* Copyright (c) 2024 Louis Mayencourt
+* Copyright (c) 2026 Louis Mayencourt
 */
 
 use bevy::{
@@ -206,7 +206,7 @@ fn move_hold(
 fn feet_control(
     mut commands: Commands,
     keys: Res<ButtonInput<KeyCode>>,
-    mut q_body: Query<&mut Transform, With<Body>>,
+    mut q_body: Query<(&mut Transform, &mut Body)>,
     mut q_left_foot: Query<(&mut Transform, &mut Velocity, Entity, &mut LeftFoot), (Without<Body>)>,
     mut q_right_foot: Query<(&mut Transform, &mut Velocity, Entity, &mut RightFoot), (Without<Body>, Without<LeftFoot>)>,
     r_right_hand: Query<(&Transform, &RightHand), (Without<Body>, Without<LeftFoot>, Without<RightFoot>)>,
@@ -214,54 +214,72 @@ fn feet_control(
     mut gizmos: Gizmos,
 ) {
     // Predict the feet position based on the body position.
-    let body = q_body.single_mut().unwrap();
+    let mut body = q_body.single_mut().unwrap();
     let mut left_foot = q_left_foot.single_mut().unwrap();
     let mut right_foot = q_right_foot.single_mut().unwrap();
     let left_hand = r_left_hand.single().unwrap();
     let right_hand = r_right_hand.single().unwrap();
 
-    let both_and_on_hold = left_hand.1.is_holding && right_hand.1.is_holding;
+    let distance_threshold = 25.0;
+    let foot_offset = if keys.pressed(KeyCode::Space) {
+        LEG_LENGTH/3.0
+    } else {
+        0.0
+    };
+
+    // let both_and_on_hold = left_hand.1.is_holding && right_hand.1.is_holding;
+    let feet_can_move = body.1.active_limb.is_none();
+    // let feet_can_move = feet_can_move && adapt_feet_position;
+
+    // Find best foot position
+    let body_to_hand_distance = body.0.translation.distance(left_hand.0.translation);
+    let left_foot_target = body.0.translation + Vec3::new(-BODY_WIDTH/2.0 - body_to_hand_distance/2.0, -BODY_HEIGHT/2.0 - LEG_LENGTH/1.5 + foot_offset, 0.0);
+    gizmos.circle_2d(left_foot_target.truncate(), 4.0, RED_200);
+    // Right foot
+    let body_to_hand_distance = body.0.translation.distance(right_hand.0.translation);
+    let right_foot_target = body.0.translation + Vec3::new(BODY_WIDTH/2.0 + body_to_hand_distance/2.0, -BODY_HEIGHT/2.0 - LEG_LENGTH/1.5 + foot_offset, 0.0);
+    gizmos.circle_2d(right_foot_target.truncate(), 4.0, BLUE_200);
 
     // Left foot
-    let body_to_hand_distance = body.translation.distance(left_hand.0.translation);
-    let foot_target = body.translation + Vec3::new(-BODY_WIDTH/2.0 - body_to_hand_distance/2.0, -BODY_HEIGHT/2.0 - LEG_LENGTH/1.5, 0.0);
-    gizmos.circle_2d(foot_target.truncate(), 4.0, RED_200);
+    let distance_to_target = left_foot.0.translation.distance(left_foot_target);
+    let foot_is_moving = body.1.active_limb == Some(Limb::LeftFoot);
 
-    let distance_to_target = left_foot.0.translation.distance(foot_target);
-
-    if !left_foot.3.is_moving && distance_to_target > 40.0 && both_and_on_hold{
+    // if !left_foot.3.is_moving && distance_to_target > distance_threshold && feet_can_move{
+    if !foot_is_moving && feet_can_move && distance_to_target > distance_threshold {
             left_foot.3.is_moving = true;
+            body.1.active_limb = Some(Limb::LeftFoot);
             commands.entity(left_foot.2).remove::<RigidBody>();
             commands.entity(left_foot.2).insert(RigidBody::KinematicVelocityBased);
-    } else if left_foot.3.is_moving && distance_to_target < 2.0 {
+    } else if foot_is_moving && distance_to_target < 2.0 {
             left_foot.3.is_moving = false;
+            body.1.active_limb = None;
             left_foot.1.linvel = Vec2::ZERO;
             left_foot.1.angvel = 0.0;
     }
 
-    if left_foot.3.is_moving {
-        reach_smoothly_target(&left_foot.0, &mut left_foot.1, foot_target.truncate(), &mut gizmos);
+    if foot_is_moving {
+        reach_smoothly_target(&left_foot.0, &mut left_foot.1, left_foot_target.truncate(), &mut gizmos);
     }
 
     // Right feet
-    let body_to_hand_distance = body.translation.distance(right_hand.0.translation);
-    let foot_target = body.translation + Vec3::new(BODY_WIDTH/2.0 + body_to_hand_distance/2.0, -BODY_HEIGHT/2.0 - LEG_LENGTH/1.5, 0.0);
-    gizmos.circle_2d(foot_target.truncate(), 4.0, BLUE_200);
+    let distance_to_target = right_foot.0.translation.distance(right_foot_target);
+    let foot_is_moving = body.1.active_limb == Some(Limb::RightFoot);
 
-    let distance_to_target = right_foot.0.translation.distance(foot_target);
-
-    if !right_foot.3.is_moving && distance_to_target > 40.0 && both_and_on_hold{
+    // if !right_foot.3.is_moving && distance_to_target > distance_threshold && feet_can_move{
+    if !foot_is_moving && feet_can_move && distance_to_target > distance_threshold {
             right_foot.3.is_moving = true;
+            body.1.active_limb = Some(Limb::RightFoot);
             commands.entity(right_foot.2).remove::<RigidBody>();
             commands.entity(right_foot.2).insert(RigidBody::KinematicVelocityBased);
-    } else if right_foot.3.is_moving && distance_to_target < 2.0 {
+    } else if foot_is_moving && distance_to_target < 2.0 {
             right_foot.3.is_moving = false;
+            body.1.active_limb = None;
             right_foot.1.linvel = Vec2::ZERO;
             right_foot.1.angvel = 0.0;
     }
 
-    if right_foot.3.is_moving {
-        reach_smoothly_target(&right_foot.0, &mut right_foot.1, foot_target.truncate(), &mut gizmos);
+    if foot_is_moving {
+        reach_smoothly_target(&right_foot.0, &mut right_foot.1, right_foot_target.truncate(), &mut gizmos);
     }
 }
 
@@ -269,7 +287,7 @@ fn hands_control(
     buttons: Res<ButtonInput<MouseButton>>,
     keys: Res<ButtonInput<KeyCode>>,
     mouse_position: Res<MousePosition>,
-    mut q_body: Query<&mut Transform, With<Body>>,
+    mut q_body: Query<(&mut Transform, &mut Body)>,
     mut q_left_hand: Query<(&mut Transform, &mut Velocity, Entity, &mut LeftHand), (Without<Body>)>,
     mut q_right_hand: Query<(&mut Transform, &mut Velocity, Entity, &mut RightHand), (Without<LeftHand>, Without<Body>)>,
     mut r_r_hand_on_hold: ResMut<RightHandOnHold>,
@@ -277,18 +295,19 @@ fn hands_control(
     mut gizmos: Gizmos,
     mut commands: Commands,
 ) {
+    let mut body = q_body.single_mut().unwrap();
+
     // if !buttons.pressed(MouseButton::Left) || !keys.pressed(KeyCode::KeyA) {
     let mut hand_components = q_left_hand.single_mut().unwrap();
     if keys.just_pressed(KeyCode::KeyA) {
         println!("Disable gravity on left hand");
         hand_components.3.is_holding = false;
+        body.1.active_limb = Some(Limb::LeftHand);
         hand::disable_gravity(&mut commands, hand_components.2);
     }
 
     if keys.pressed(KeyCode::KeyA) {
-        let body = q_body.single().unwrap();
-
-        update_hand_position(body, &hand_components.0, &mut hand_components.1, &mouse_position.world_position, &mut gizmos);
+        update_hand_position(&body.0, &hand_components.0, &mut hand_components.1, &mouse_position.world_position, &mut gizmos);
         // hand_components.1.linvel = Vec2::new(0.0, 0.0);
     }
 
@@ -301,6 +320,7 @@ fn hands_control(
             println!("Releasing hold with left hand");
             hand_components.3.is_holding = false;
         }
+        body.1.active_limb = None;
         hand_components.1.linvel = Vec2::ZERO;
         hand_components.1.angvel = 0.0;
     }
@@ -311,13 +331,12 @@ fn hands_control(
     if keys.just_pressed(KeyCode::KeyS) {
         println!("Disable gravity on right hand");
         hand_components.3.is_holding = false;
+        body.1.active_limb = Some(Limb::RightHand);
         hand::disable_gravity(&mut commands, hand_components.2);
     }
 
     if keys.pressed(KeyCode::KeyS) {
-        let body = q_body.single().unwrap();
-
-        update_hand_position(body, &hand_components.0, &mut hand_components.1, &mouse_position.world_position, &mut gizmos);
+        update_hand_position(&body.0, &hand_components.0, &mut hand_components.1, &mouse_position.world_position, &mut gizmos);
         // hand_components.1.linvel = Vec2::new(0.0, 0.0);
     }
 
@@ -330,6 +349,7 @@ fn hands_control(
             println!("Releasing hold with right hand");
             hand_components.3.is_holding = false;
         }
+        body.1.active_limb = None;
         hand_components.1.linvel = Vec2::ZERO;
         hand_components.1.angvel = 0.0;
     }

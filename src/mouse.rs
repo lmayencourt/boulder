@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: MIT
-* Copyright (c) 2024 Louis Mayencourt
+* Copyright (c) 2026 Louis Mayencourt
 */
 
 use bevy::{

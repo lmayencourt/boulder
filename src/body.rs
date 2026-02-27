@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: MIT
-* Copyright (c) 2024 Louis Mayencourt
+* Copyright (c) 2026 Louis Mayencourt
 */
 
 use bevy::{
@@ -22,10 +22,19 @@ static BODY_WIDTH_PHY: f32 = 40.0 / PHY_TO_PIX;
 static BODY_HEIGHT_PHY: f32 = 50.0 / PHY_TO_PIX;
 static ARM_LENGTH_PHY: f32 = 80.0 / PHY_TO_PIX;
 
+#[derive(PartialEq)]
+pub enum Limb {
+    LeftHand,
+    RightHand,
+    LeftFoot,
+    RightFoot,
+}
+
 #[derive(Component)]
 pub struct Body {
     position: Vec2,
     velocity: Vec2,
+    pub active_limb: Option<Limb>,
 }
 
 #[derive(Component)]
@@ -52,6 +61,7 @@ impl Body {
             Body {
                 position: Vec2::ZERO,
                 velocity: Vec2::ZERO,
+                active_limb: None,
             },
             Pickable::IGNORE,
             RigidBody::Dynamic,
