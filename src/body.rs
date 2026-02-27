@@ -55,6 +55,7 @@ impl Body {
             },
             Pickable::IGNORE,
             RigidBody::Dynamic,
+            Velocity::zero(),
             Collider::capsule(vec2(0.0, -BODY_HEIGHT/2.0), vec2(0.0, BODY_HEIGHT/2.0), BODY_WIDTH/2.0),
             // Collider::ball(BODY_WIDTH/2.0),
             // Collider::cuboid(15.0, 50.0),
@@ -67,7 +68,9 @@ impl Body {
             Mesh2d(meshes.add(Circle::new(10.0))),
             MeshMaterial2d(materials.add(Color::from(BLUE_300))),
             Transform::from_xyz(ARM_LENGTH, 0.0, 0.0),
-            RightHand,
+            RightHand {
+                is_holding: true,
+            },
             Pickable::IGNORE,
             RigidBody::KinematicPositionBased,
             Velocity::zero(),
@@ -130,7 +133,9 @@ impl Body {
             Mesh2d(meshes.add(Circle::new(10.0))),
             MeshMaterial2d(materials.add(Color::from(RED_300))),
             Transform::from_xyz(-ARM_LENGTH, 0.0, 0.0),
-            LeftHand,
+            LeftHand {
+                is_holding: true,
+            },
             Pickable::IGNORE,
             RigidBody::KinematicPositionBased,
             Velocity::zero(),
@@ -282,6 +287,17 @@ impl Body {
             // .limits([0.0, 180.0_f32.to_radians()])
             .build();
         commands.entity(foot).insert(ImpulseJoint::new(knee, foot_joint));
+    }
+}
+
+pub fn body_speed_limiter(
+    mut q_body: Query<&mut Velocity, With<Body>>,
+) {
+    let mut body_velocity = q_body.single_mut().unwrap();
+    let speed = body_velocity.linvel.length();
+    let max_speed = 100.0;
+    if speed > max_speed {
+        body_velocity.linvel = body_velocity.linvel.normalize() * max_speed;
     }
 }
 

@@ -12,10 +12,14 @@ use bevy_rapier2d::prelude::*;
 // pub struct Hand;
 
 #[derive(Component)]
-pub struct LeftHand;
+pub struct LeftHand {
+    pub is_holding: bool,
+}
 
 #[derive(Component)]
-pub struct RightHand;
+pub struct RightHand{
+    pub is_holding: bool,
+}
 
 #[derive(Component)]
 pub struct RightShoulder;
@@ -34,7 +38,9 @@ pub struct LeftShoulder;
             Mesh2d(meshes.add(Circle::new(10.0))),
             MeshMaterial2d(materials.add(Color::from(BLUE_300))),
             Transform::from_xyz(0.0, 0.0, 0.0),
-            LeftHand,
+            LeftHand{
+                is_holding: true,
+            },
             Pickable::IGNORE
         ));
 
@@ -42,7 +48,9 @@ pub struct LeftShoulder;
             Mesh2d(meshes.add(Circle::new(10.0))),
             MeshMaterial2d(materials.add(Color::from(RED_300))),
             Transform::from_xyz(0.0, 0.0, 0.0),
-            RightHand,
+            RightHand {
+                is_holding: true,
+            },
             Pickable::IGNORE
         ));
             // .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
