@@ -5,6 +5,7 @@
 use bevy::{
     prelude::*,
     window::PrimaryWindow,
+    color::palettes::tailwind::*,
 };
 use bevy_rapier2d::prelude::*;
 use rand::prelude::*;
@@ -33,11 +34,21 @@ fn main() {
         .insert_resource(holds::RightHandOnHold(false))
         .add_systems(Startup, setup_system)
         // .add_systems(Startup, setup_chain)
-        .add_systems(Update, follow_mouse)
+        .add_systems(Update, hands_control)
+        .add_systems(Update, feet_control)
         .add_systems(Update, hand_on_holds_detection)
+        .add_systems(Update, move_hold)
         // .add_systems(Update, body::movement)
         .run();
 }
+
+#[derive(Component)]
+pub struct LastHold {
+    fixed_position: Option<Vec2>,
+}
+
+#[derive(Component)]
+pub struct FirstHold;
 
 fn setup_system(
     mut commands: Commands,
@@ -64,9 +75,187 @@ fn setup_system(
         Collider::cuboid(500.0, 10.0),
         Transform::from_translation(Vec3::new(0.0, -250.0, 0.0)),
     ));
+
+    // Test spawning a body like chains
+
+    let body_width = 40.0;
+    let body_height = 20.0;
+    let body = commands.spawn((
+        Mesh2d(meshes.add(Rectangle::new(body_width, body_height))),
+        MeshMaterial2d(materials.add(Color::from(GRAY_500))),
+        Transform::from_xyz(250.0+0.0, 0.0, 0.0),
+        // RigidBody::KinematicPositionBased,
+        RigidBody::Dynamic,
+        Collider::cuboid(body_width/2.0, body_height/2.0),
+    )).id();
+
+    // spawn a few links attached to the body
+    let cube_size = 10.0;
+    let cube = commands.spawn((
+        Mesh2d(meshes.add(Rectangle::new(cube_size, cube_size))),
+        MeshMaterial2d(materials.add(Color::from(GRAY_200))),
+        Transform::from_xyz(250.0+body_width/2.0, -2.0 * body_height, 0.0),
+        RigidBody::Dynamic,
+        // RigidBody::KinematicPositionBased,
+        Collider::cuboid(cube_size/2.0, cube_size/2.0),
+    )).id();
+    let joint = RevoluteJointBuilder::new()
+        .local_anchor1(Vec2::new(body_width/2.0, -body_height/2.0))
+        .local_anchor2(Vec2::new(0.0, body_height))
+        .build();
+    commands.entity(cube).insert(ImpulseJoint::new(body, joint));
+
+    let small_cube_size = 8.0;
+    let small_cube = commands.spawn((
+        Mesh2d(meshes.add(Rectangle::new(small_cube_size, small_cube_size))),
+        MeshMaterial2d(materials.add(Color::from(GRAY_200))),
+        Transform::from_xyz(250.0+body_width/2.0, -3.0 * body_height, 0.0),
+        // RigidBody::Dynamic,
+        RigidBody::KinematicPositionBased,
+        Collider::cuboid(small_cube_size/2.0, small_cube_size/2.0),
+        FirstHold,
+    )).id();
+    let joint = RevoluteJointBuilder::new()
+        .local_anchor1(Vec2::new(0.0, 0.0))
+        .local_anchor2(Vec2::new(0.0, body_height))
+        .build();
+    commands.entity(small_cube).insert(ImpulseJoint::new(cube, joint));
+
+    // spawn a second link
+    let circle_size = 15.0;
+    let circle = commands.spawn((
+        Mesh2d(meshes.add(Circle::new(circle_size/2.0))),
+        MeshMaterial2d(materials.add(Color::from(GRAY_200))),
+        Transform::from_xyz(250.0+-body_width/2.0, -2.0 * body_height, 0.0),
+        RigidBody::Dynamic,
+        // RigidBody::KinematicPositionBased,
+        Collider::ball(circle_size/2.0),
+    )).id();
+    let joint = RevoluteJointBuilder::new()
+        .local_anchor1(Vec2::new(-body_width/2.0, -body_height/2.0))
+        .local_anchor2(Vec2::new(0.0, body_height))
+        // .local_anchor1(Vec2::new(0.0, body_height))
+        // .local_anchor2(Vec2::new(body_width/2.0, body_height/2.0))
+        .build();
+    commands.entity(circle).insert(ImpulseJoint::new(body, joint));
+    // commands.entity(body).insert(ImpulseJoint::new(circle, joint));
+
+    let small_circle_size = 15.0;
+    let small_circle = commands.spawn((
+        Mesh2d(meshes.add(Circle::new(small_circle_size/2.0))),
+        MeshMaterial2d(materials.add(Color::from(GRAY_200))),
+        Transform::from_xyz(250.0+-body_width/2.0, -3.0 * body_height, 0.0),
+        RigidBody::Dynamic,
+        // RigidBody::KinematicPositionBased,
+        Collider::ball(small_circle_size/2.0),
+        LastHold{ fixed_position: None },
+        Velocity::zero(),
+    )).id();
+    let joint = RevoluteJointBuilder::new()
+        // .local_anchor1(Vec2::new(0.0, 0.0))
+        // .local_anchor2(Vec2::new(0.0, body_height))
+        .local_anchor1(Vec2::new(0.0, body_height))
+        .local_anchor2(Vec2::new(0.0, 0.0))
+        .build();
+    commands.entity(small_circle).insert(ImpulseJoint::new(circle, joint));
+    // commands.entity(circle).insert(ImpulseJoint::new(small_circle, joint));
 }
 
-fn follow_mouse(
+fn move_hold(
+    mut commands: Commands,
+    keys: Res<ButtonInput<KeyCode>>,
+    mut q_last_hold: Query<(&mut Transform, Entity, &mut LastHold, &mut Velocity)>,
+    mut q_first_hold: Query<(&mut Transform, Entity), (With<FirstHold>, Without<LastHold>)>,
+    mouse_position: Res<MousePosition>,
+) {
+    let mut last_hold = q_last_hold.single_mut().unwrap();
+    let mut first_hold = q_first_hold.single_mut().unwrap();
+
+    if keys.just_pressed(KeyCode::KeyD) {
+        // commands.entity(last_hold.1).insert(Collider::ball(15.0));
+        commands.entity(last_hold.1).remove::<RigidBody>();
+        commands.entity(last_hold.1).insert(RigidBody::KinematicVelocityBased);
+    }
+    if keys.pressed(KeyCode::KeyD) {
+        last_hold.0.translation = mouse_position.world_position.extend(0.0);
+        last_hold.2.fixed_position = Some(mouse_position.world_position);
+        last_hold.3.angvel = 0.0;
+    // } else if let Some(fixed_position) = last_hold.2.fixed_position {
+    //         last_hold.0.translation = fixed_position.extend(0.0);
+    //         commands.entity(last_hold.1).remove::<Collider>();
+    }
+    if keys.just_released(KeyCode::KeyD) {
+        commands.entity(last_hold.1).remove::<RigidBody>();
+        commands.entity(last_hold.1).insert(RigidBody::Dynamic);
+    }
+
+    if keys.just_pressed(KeyCode::KeyF) {
+        commands.entity(first_hold.1).remove::<RigidBody>();
+        commands.entity(first_hold.1).insert(RigidBody::KinematicPositionBased);
+    }
+    if keys.pressed(KeyCode::KeyF) {
+        first_hold.0.translation = mouse_position.world_position.extend(0.0);
+    }
+    if keys.just_released(KeyCode::KeyF) {
+        commands.entity(first_hold.1).remove::<RigidBody>();
+        commands.entity(first_hold.1).insert(RigidBody::Dynamic);
+    }
+}
+
+fn feet_control(
+    mut commands: Commands,
+    keys: Res<ButtonInput<KeyCode>>,
+    mut q_body: Query<&mut Transform, With<Body>>,
+    mut q_left_foot: Query<(&mut Transform, &mut Velocity, Entity, &mut LeftFoot), (Without<Body>)>,
+    mut q_right_foot: Query<(&mut Transform, &mut Velocity, Entity, &mut RightFoot), (Without<Body>, Without<LeftFoot>)>,
+    mut gizmos: Gizmos,
+) {
+    // Predict the feet position based on the body position.
+    let body = q_body.single_mut().unwrap();
+    let mut left_foot = q_left_foot.single_mut().unwrap();
+    let mut right_foot = q_right_foot.single_mut().unwrap();
+
+    let foot_target = body.translation + Vec3::new(-BODY_WIDTH/2.0, -BODY_HEIGHT/2.0 - LEG_LENGTH/1.5, 0.0);
+    gizmos.circle_2d(foot_target.truncate(), 4.0, RED_200);
+
+    let distance_to_target = left_foot.0.translation.distance(foot_target);
+
+    if !left_foot.3.is_moving && distance_to_target > 40.0 {
+            left_foot.3.is_moving = true;
+            commands.entity(left_foot.2).remove::<RigidBody>();
+            commands.entity(left_foot.2).insert(RigidBody::KinematicVelocityBased);
+    } else if left_foot.3.is_moving && distance_to_target < 2.0 {
+            left_foot.3.is_moving = false;
+            left_foot.1.linvel = Vec2::ZERO;
+            left_foot.1.angvel = 0.0;
+    }
+
+    if left_foot.3.is_moving {
+        reach_smoothly_target(&left_foot.0, &mut left_foot.1, foot_target.truncate(), &mut gizmos);
+    }
+
+    // Right feet
+    let foot_target = body.translation + Vec3::new(BODY_WIDTH/2.0, -BODY_HEIGHT/2.0 - LEG_LENGTH/1.5, 0.0);
+    gizmos.circle_2d(foot_target.truncate(), 4.0, BLUE_200);
+
+    let distance_to_target = right_foot.0.translation.distance(foot_target);
+
+    if !right_foot.3.is_moving && distance_to_target > 40.0 {
+            right_foot.3.is_moving = true;
+            commands.entity(right_foot.2).remove::<RigidBody>();
+            commands.entity(right_foot.2).insert(RigidBody::KinematicVelocityBased);
+    } else if right_foot.3.is_moving && distance_to_target < 2.0 {
+            right_foot.3.is_moving = false;
+            right_foot.1.linvel = Vec2::ZERO;
+            right_foot.1.angvel = 0.0;
+    }
+
+    if right_foot.3.is_moving {
+        reach_smoothly_target(&right_foot.0, &mut right_foot.1, foot_target.truncate(), &mut gizmos);
+    }
+}
+
+fn hands_control(
     buttons: Res<ButtonInput<MouseButton>>,
     keys: Res<ButtonInput<KeyCode>>,
     mouse_position: Res<MousePosition>,
@@ -165,19 +354,19 @@ fn update_hand_position(
 }
 
 fn reach_smoothly_target(
-    hand_transform: &Transform,
-    hand_velocity: &mut Velocity,
+    body_transform: &Transform,
+    body_velocity: &mut Velocity,
     target_position: Vec2,
     gizmos: &mut Gizmos,
 ) {
-    let hand_target_distance = hand_transform.translation.distance(target_position.extend(0.0));
+    let hand_target_distance = body_transform.translation.distance(target_position.extend(0.0));
     let ray = Ray2d {
-        origin: hand_transform.translation.truncate(),
-        direction: Dir2::new_unchecked((target_position - hand_transform.translation.truncate()).normalize()),
+        origin: body_transform.translation.truncate(),
+        direction: Dir2::new_unchecked((target_position - body_transform.translation.truncate()).normalize()),
     };
     gizmos.ray_2d(ray.origin, *ray.direction * hand_target_distance, Color::srgb(1.0, 1.0, 0.0));
 
-    hand_velocity.linvel = ray.direction * hand_target_distance.min(ARM_LENGTH/2.0) * 8.0;
+    body_velocity.linvel = ray.direction * hand_target_distance.min(ARM_LENGTH/2.0) * 8.0;
 }
 
 #[derive(Component)]

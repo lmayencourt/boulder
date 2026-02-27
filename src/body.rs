@@ -12,9 +12,10 @@ use crate::hand::{LeftHand, RightHand};
 // use crate::hand::spawn;
 // use crate::physics::RigidBody;
 
-static BODY_WIDTH: f32 = 40.0;
-static BODY_HEIGHT: f32 = 50.0;
+pub static BODY_WIDTH: f32 = 40.0;
+pub static BODY_HEIGHT: f32 = 50.0;
 pub static ARM_LENGTH: f32 = 80.0;
+pub static LEG_LENGTH: f32 = 100.0;
 
 static PHY_TO_PIX: f32 = 1.0;
 static BODY_WIDTH_PHY: f32 = 40.0 / PHY_TO_PIX;
@@ -25,6 +26,16 @@ static ARM_LENGTH_PHY: f32 = 80.0 / PHY_TO_PIX;
 pub struct Body {
     position: Vec2,
     velocity: Vec2,
+}
+
+#[derive(Component)]
+pub struct LeftFoot {
+    pub is_moving: bool,
+}
+
+#[derive(Component)]
+pub struct RightFoot {
+    pub is_moving: bool,
 }
 
 impl Body {
@@ -134,6 +145,143 @@ impl Body {
             .build();
         commands.entity(hand).insert(ImpulseJoint::new(elbow, elbow_joint));
 
+
+        let hip = commands.spawn((
+            Mesh2d(meshes.add(Circle::new(8.0))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Transform::from_xyz(BODY_WIDTH/2.0, -BODY_HEIGHT/2.0, 0.0),
+            Pickable::IGNORE,
+            RigidBody::Dynamic,
+            Collider::ball(2.0),
+            Damping {
+                linear_damping: 5.0,
+                angular_damping: 5.0,
+            },
+        )).id();
+        let hip_joint = RevoluteJointBuilder::new()
+            // body anchor
+            .local_anchor1(Vec2::new(BODY_WIDTH_PHY/2.0, -BODY_HEIGHT_PHY/2.0))
+            // hip anchor
+            .local_anchor2(Vec2::ZERO)
+            // .limits([0.0, 180.0_f32.to_radians()])
+            .build();
+        commands.entity(hip).insert(ImpulseJoint::new(body, hip_joint));
+
+        let knee = commands.spawn((
+            Mesh2d(meshes.add(Circle::new(10.0))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT + LEG_LENGTH/2.0, 0.0),
+            Pickable::IGNORE,
+            RigidBody::Dynamic,
+            Collider::ball(4.0),
+            Damping {
+                linear_damping: 5.0,
+                angular_damping: 5.0,
+            },
+        )).id();
+        let knee_joint = RevoluteJointBuilder::new()
+            // knee anchor
+            .local_anchor1(Vec2::new(0.0, -LEG_LENGTH/2.0))
+            // knee anchor
+            .local_anchor2(Vec2::ZERO)
+            // .limits([0.0, 180.0_f32.to_radians()])
+            .build();
+        commands.entity(knee).insert(ImpulseJoint::new(hip, knee_joint));
+
+        let foot = commands.spawn((
+            Mesh2d(meshes.add(Circle::new(10.0))),
+            MeshMaterial2d(materials.add(Color::from(BLUE_200))),
+            Transform::from_xyz(BODY_WIDTH/2.0, -BODY_HEIGHT - LEG_LENGTH, 0.0),
+            Pickable::IGNORE,
+            RigidBody::Dynamic,
+            // RigidBody::KinematicPositionBased,
+            Collider::ball(4.0),
+            Damping {
+                linear_damping: 5.0,
+                angular_damping: 5.0,
+            },
+            RightFoot {
+                is_moving: false,
+            },
+            Velocity::zero(),
+        )).id();
+        let foot_joint = RevoluteJointBuilder::new()
+            // foot anchor
+            .local_anchor1(Vec2::new(0.0, -LEG_LENGTH/2.0))
+            // foot anchor
+            .local_anchor2(Vec2::ZERO)
+            // .limits([0.0, 180.0_f32.to_radians()])
+            .build();
+        commands.entity(foot).insert(ImpulseJoint::new(knee, foot_joint));
+
+        // Left leg
+        let hip = commands.spawn((
+            Mesh2d(meshes.add(Circle::new(8.0))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT/2.0, 0.0),
+            Pickable::IGNORE,
+            RigidBody::Dynamic,
+            Collider::ball(2.0),
+            Damping {
+                linear_damping: 5.0,
+                angular_damping: 5.0,
+            },
+        )).id();
+        let hip_joint = RevoluteJointBuilder::new()
+            // body anchor
+            .local_anchor1(Vec2::new(-BODY_WIDTH_PHY/2.0, -BODY_HEIGHT_PHY/2.0))
+            // hip anchor
+            .local_anchor2(Vec2::ZERO)
+            // .limits([0.0, 180.0_f32.to_radians()])
+            .build();
+        commands.entity(hip).insert(ImpulseJoint::new(body, hip_joint));
+
+        let knee = commands.spawn((
+            Mesh2d(meshes.add(Circle::new(10.0))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT + LEG_LENGTH/2.0, 0.0),
+            Pickable::IGNORE,
+            RigidBody::Dynamic,
+            Collider::ball(4.0),
+            Damping {
+                linear_damping: 5.0,
+                angular_damping: 5.0,
+            },
+        )).id();
+        let knee_joint = RevoluteJointBuilder::new()
+            // knee anchor
+            .local_anchor1(Vec2::new(0.0, -LEG_LENGTH/2.0))
+            // knee anchor
+            .local_anchor2(Vec2::ZERO)
+            // .limits([0.0, 180.0_f32.to_radians()])
+            .build();
+        commands.entity(knee).insert(ImpulseJoint::new(hip, knee_joint));
+
+        let foot = commands.spawn((
+            Mesh2d(meshes.add(Circle::new(10.0))),
+            MeshMaterial2d(materials.add(Color::from(RED_200))),
+            Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT - LEG_LENGTH, 0.0),
+            Pickable::IGNORE,
+            // RigidBody::Dynamic,
+            RigidBody::KinematicPositionBased,
+            Collider::ball(4.0),
+            Damping {
+                linear_damping: 5.0,
+                angular_damping: 5.0,
+            },
+            LeftFoot{
+                is_moving: false,
+            },
+            Velocity::zero(),
+        )).id();
+        let foot_joint = RevoluteJointBuilder::new()
+            // foot anchor
+            .local_anchor1(Vec2::new(0.0, -LEG_LENGTH/2.0))
+            // foot anchor
+            .local_anchor2(Vec2::ZERO)
+            // .limits([0.0, 180.0_f32.to_radians()])
+            .build();
+        commands.entity(foot).insert(ImpulseJoint::new(knee, foot_joint));
     }
 }
 
