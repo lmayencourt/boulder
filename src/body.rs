@@ -8,7 +8,7 @@ use bevy::{
 };
 use bevy_rapier2d::prelude::*;
 
-use crate::hand::{LeftHand, RightHand};
+use crate::hand::{LeftHand, RightHand, HAND_SIZE};
 // use crate::hand::spawn;
 // use crate::physics::RigidBody;
 
@@ -75,7 +75,7 @@ impl Body {
 
         // Right arm
         let hand = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(10.0))),
+            Mesh2d(meshes.add(Circle::new(HAND_SIZE))),
             MeshMaterial2d(materials.add(Color::from(BLUE_300))),
             Transform::from_xyz(ARM_LENGTH, 0.0, 0.0),
             RightHand {
@@ -84,7 +84,7 @@ impl Body {
             Pickable::IGNORE,
             RigidBody::KinematicPositionBased,
             Velocity::zero(),
-            Collider::ball(4.0),
+            Collider::ball(HAND_SIZE/2.0),
         )).id();
 
         let elbow = commands.spawn((
@@ -140,7 +140,7 @@ impl Body {
         commands.entity(elbow).insert(ImpulseJoint::new(body, shoulder_joint));
 
         let hand = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(10.0))),
+            Mesh2d(meshes.add(Circle::new(HAND_SIZE))),
             MeshMaterial2d(materials.add(Color::from(RED_300))),
             Transform::from_xyz(-ARM_LENGTH, 0.0, 0.0),
             LeftHand {
@@ -149,7 +149,7 @@ impl Body {
             Pickable::IGNORE,
             RigidBody::KinematicPositionBased,
             Velocity::zero(),
-            Collider::ball(4.0),
+            Collider::ball(HAND_SIZE/2.0),
         )).id();
         let elbow_joint = RevoluteJointBuilder::new()
             // hand anchor

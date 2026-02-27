@@ -11,6 +11,8 @@ use bevy_rapier2d::prelude::*;
 // #[derive(Component)]
 // pub struct Hand;
 
+pub static HAND_SIZE: f32 = 10.0;
+
 #[derive(Component)]
 pub struct LeftHand {
     pub is_holding: bool,

@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: MIT
-* Copyright (c) 2024 Louis Mayencourt
+* Copyright (c) 2026 Louis Mayencourt
 */
 
 use std::fmt::Debug;
@@ -12,7 +12,9 @@ use bevy::{
 
 use bevy_rapier2d::prelude::*;
 
-use crate::hand::{LeftHand, RightHand};
+use crate::hand::{LeftHand, RightHand, HAND_SIZE};
+
+static HOLD_SIZE: Vec2 = Vec2::new(30.0, 10.0);
 
 #[derive(Resource)]
 pub struct LeftHandOnHold(pub bool);
@@ -42,7 +44,7 @@ impl Hold {
         let hover_matl = materials.add(Color::from(CYAN_100));
 
         commands.spawn((
-            Mesh2d(meshes.add(Rectangle::new(30.0, 30.0))),
+            Mesh2d(meshes.add(Rectangle::new(HOLD_SIZE.x, HOLD_SIZE.y))),
             MeshMaterial2d(default_matl.clone()),
             Transform::from_xyz(self.position.x, self.position.y, 0.0),
             self,
@@ -73,6 +75,7 @@ pub fn hand_on_holds_detection(
     mut r_r_hand_on_hold: ResMut<RightHandOnHold>,
     mut r_l_hand_on_hold: ResMut<LeftHandOnHold>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    mut gizmos: Gizmos,
 ) {
     let default_matl = materials.add(Color::from(GRAY_300));
     let hover_matl = materials.add(Color::from(CYAN_300));
@@ -80,8 +83,8 @@ pub fn hand_on_holds_detection(
     let mut l_hand_on_any_hold = false;
     let mut r_hand_on_any_hold = false;
     for (mut material, transform) in q_holds.iter_mut() {
-        let l_hand_on_hold = is_hand_on_hold(q_l_hand.single().unwrap(), transform);
-        let r_hand_on_hold = is_hand_on_hold(q_r_hand.single().unwrap(), transform);
+        let l_hand_on_hold = is_hand_on_hold(q_l_hand.single().unwrap(), transform, &mut gizmos);
+        let r_hand_on_hold = is_hand_on_hold(q_r_hand.single().unwrap(), transform, &mut gizmos);
 
         if l_hand_on_hold || r_hand_on_hold {
             material.0 = hover_matl.clone();
@@ -106,9 +109,12 @@ pub fn hand_on_holds_detection(
 fn is_hand_on_hold(
     hand_transform: &Transform,
     hold_transform: &Transform,
+    mut gizmos: &mut Gizmos,
 ) -> bool {
-    let hand_box = BoundingCircle::new(hand_transform.translation.truncate(), 10.0);
+    let hand_box = BoundingCircle::new(hand_transform.translation.truncate(), HAND_SIZE);
+    gizmos.circle_2d(hand_transform.translation.truncate(), HAND_SIZE, Color::from(YELLOW_200));
 
-    let bounding_box = Aabb2d::new(hold_transform.translation.truncate(), Vec2::new(15.0, 15.0));
+    let bounding_box = Aabb2d::new(hold_transform.translation.truncate(), HOLD_SIZE / 2.0);
+    gizmos.rect_2d(hold_transform.translation.truncate(), HOLD_SIZE, Color::from(GRAY_400));
     hand_box.intersects(&bounding_box)
 }

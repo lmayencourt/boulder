@@ -12,14 +12,14 @@ use rand::prelude::*;
 
 mod body;
 mod hand;
-mod holds;
 mod mouse;
+mod wall;
 // mod physics;
 
 use body::*;
 use hand::*;
-use holds::*;
 use mouse::*;
+use wall::*;
 // use physics::*;
 
 fn main() {
@@ -30,14 +30,14 @@ fn main() {
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(MousePlugin)
-        .insert_resource(holds::LeftHandOnHold(false))
-        .insert_resource(holds::RightHandOnHold(false))
+        .insert_resource(wall::holds::LeftHandOnHold(false))
+        .insert_resource(wall::holds::RightHandOnHold(false))
         .add_systems(Startup, setup_system)
         // .add_systems(Startup, setup_chain)
         .add_systems(Update, body::body_speed_limiter)
         .add_systems(Update, hands_control)
         .add_systems(Update, feet_control)
-        .add_systems(Update, hand_on_holds_detection)
+        .add_systems(Update, wall::holds::hand_on_holds_detection)
         .add_systems(Update, move_hold)
         // .add_systems(Update, body::movement)
         .run();
@@ -59,14 +59,9 @@ fn setup_system(
     // Spawn a 2D camera
     commands.spawn((Camera2d, MainCamera));
 
-    // Spwan a few shapes randomly on the screen
-    for i in 0..20 {
-        let x = rand::rng().random_range(-400.0..400.0);
-        let y = rand::rng().random_range(-200.0..200.0);
-
-        let hold = Hold::new(Vec2::new(x, y));
-        hold.spawn(&mut commands, &mut meshes, &mut materials);
-    }
+    // Spawn a simple wall with holds to climb
+    let path = wall::route::Path::new(500.0);
+    path.spawn(&mut commands, &mut meshes, &mut materials);
 
     // Spawn the body
     Body::spawn(&mut commands, &mut meshes, &mut materials);
