@@ -94,6 +94,7 @@ impl Body {
             Pickable::IGNORE,
             RigidBody::Dynamic,
             Collider::ball(4.0),
+            Velocity::zero(),
             Damping {
                 linear_damping: 5.0,
                 angular_damping: 5.0,
@@ -125,6 +126,7 @@ impl Body {
             Pickable::IGNORE,
             RigidBody::Dynamic,
             Collider::ball(4.0),
+            Velocity::zero(),
             Damping {
                 linear_damping: 5.0,
                 angular_damping: 5.0,
@@ -168,6 +170,7 @@ impl Body {
             Pickable::IGNORE,
             RigidBody::Dynamic,
             Collider::ball(2.0),
+            Velocity::zero(),
             Damping {
                 linear_damping: 5.0,
                 angular_damping: 5.0,
@@ -189,6 +192,7 @@ impl Body {
             Pickable::IGNORE,
             RigidBody::Dynamic,
             Collider::ball(4.0),
+            Velocity::zero(),
             Damping {
                 linear_damping: 5.0,
                 angular_damping: 5.0,
@@ -211,6 +215,7 @@ impl Body {
             RigidBody::Dynamic,
             // RigidBody::KinematicPositionBased,
             Collider::ball(4.0),
+            Velocity::zero(),
             Damping {
                 linear_damping: 5.0,
                 angular_damping: 5.0,
@@ -218,7 +223,6 @@ impl Body {
             RightFoot {
                 is_moving: false,
             },
-            Velocity::zero(),
         )).id();
         let foot_joint = RevoluteJointBuilder::new()
             // foot anchor
@@ -237,6 +241,7 @@ impl Body {
             Pickable::IGNORE,
             RigidBody::Dynamic,
             Collider::ball(2.0),
+            Velocity::zero(),
             Damping {
                 linear_damping: 5.0,
                 angular_damping: 5.0,
@@ -258,6 +263,7 @@ impl Body {
             Pickable::IGNORE,
             RigidBody::Dynamic,
             Collider::ball(4.0),
+            Velocity::zero(),
             Damping {
                 linear_damping: 5.0,
                 angular_damping: 5.0,
@@ -280,6 +286,7 @@ impl Body {
             // RigidBody::Dynamic,
             RigidBody::KinematicPositionBased,
             Collider::ball(4.0),
+            Velocity::zero(),
             Damping {
                 linear_damping: 5.0,
                 angular_damping: 5.0,
@@ -287,7 +294,6 @@ impl Body {
             LeftFoot{
                 is_moving: false,
             },
-            Velocity::zero(),
         )).id();
         let foot_joint = RevoluteJointBuilder::new()
             // foot anchor
@@ -300,14 +306,15 @@ impl Body {
     }
 }
 
-pub fn body_speed_limiter(
-    mut q_body: Query<&mut Velocity, With<Body>>,
+pub fn body_parts_speed_limiter(
+    mut q_body_parts: Query<&mut Velocity>,
 ) {
-    let mut body_velocity = q_body.single_mut().unwrap();
-    let speed = body_velocity.linvel.length();
-    let max_speed = 100.0;
-    if speed > max_speed {
-        body_velocity.linvel = body_velocity.linvel.normalize() * max_speed;
+    for mut velocity in q_body_parts.iter_mut() {
+        let speed = velocity.linvel.length();
+        let max_speed = 5.0;
+        if speed > max_speed {
+            velocity.linvel = velocity.linvel.normalize() * max_speed;
+        }
     }
 }
 

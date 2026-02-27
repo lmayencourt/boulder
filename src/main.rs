@@ -34,7 +34,7 @@ fn main() {
         .insert_resource(wall::holds::RightHandOnHold(false))
         .add_systems(Startup, setup_system)
         // .add_systems(Startup, setup_chain)
-        .add_systems(Update, body::body_speed_limiter)
+        .add_systems(Update, body::body_parts_speed_limiter)
         .add_systems(Update, hands_control)
         .add_systems(Update, feet_control)
         .add_systems(Update, wall::holds::hand_on_holds_detection)
