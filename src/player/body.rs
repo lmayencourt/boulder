@@ -12,6 +12,7 @@ use crate::hand::{LeftHand, RightHand, HAND_SIZE};
 // use crate::hand::spawn;
 // use crate::physics::RigidBody;
 
+
 pub static BODY_WIDTH: f32 = 40.0;
 pub static BODY_HEIGHT: f32 = 50.0;
 pub static ARM_LENGTH: f32 = 80.0;

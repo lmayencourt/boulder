@@ -7,7 +7,7 @@ use bevy::{
     color::palettes::tailwind::*,
 };
 
-use crate::body::Body;
+use crate::player::Body;
 
 pub struct UiPlugin;
 

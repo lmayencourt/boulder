@@ -8,7 +8,7 @@ use bevy::{
 };
 
 use crate::MainCamera;
-use crate::body::Body;
+use crate::player::Body;
 
 pub fn follow_player(
     mut q_camera: Query<&mut Transform, With<MainCamera>>,
