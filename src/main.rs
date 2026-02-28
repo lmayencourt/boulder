@@ -11,14 +11,17 @@ use bevy_rapier2d::prelude::*;
 use rand::prelude::*;
 
 mod body;
+mod camera;
 mod hand;
 mod mouse;
+mod ui;
 mod wall;
 // mod physics;
 
 use body::*;
 use hand::*;
 use mouse::*;
+use ui::UiPlugin;
 use wall::*;
 // use physics::*;
 
@@ -30,9 +33,11 @@ fn main() {
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(MousePlugin)
+        .add_plugins(UiPlugin)
         .insert_resource(wall::holds::LeftHandOnHold(false))
         .insert_resource(wall::holds::RightHandOnHold(false))
         .add_systems(Startup, setup_system)
+        .add_systems(Update, camera::follow_player)
         // .add_systems(Startup, setup_chain)
         .add_systems(Update, body::body_parts_speed_limiter)
         .add_systems(Update, hands_control)
