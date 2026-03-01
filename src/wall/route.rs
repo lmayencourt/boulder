@@ -10,7 +10,7 @@ use rand::prelude::*;
 
 use super::holds::*;
 
-static WALL_WIDTH: f32 = 200.0;
+static WALL_WIDTH: f32 = 150.0;
 
 pub struct Path {
     pub points: Vec<Vec2>,
@@ -18,11 +18,11 @@ pub struct Path {
 
 impl Path {
     pub fn new(height: f32) -> Self {
-        let last_hold_y = height;
         let vertical_spacing = 50.0;
+        let number_of_holds = height/vertical_spacing;
 
         let mut points = Vec::new();
-        for i in 0..last_hold_y as i32 {
+        for i in 0..number_of_holds as i32 {
             let x = rand::rng().random_range(-WALL_WIDTH/2.0..WALL_WIDTH/2.0);
             let y = i as f32 * vertical_spacing;
             points.push(Vec2::new(x, y));

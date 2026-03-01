@@ -22,9 +22,11 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
+        // app.add_systems(Startup, skin::setup_body_skin);
         app.add_systems(Update, body::body_parts_speed_limiter);
         app.add_systems(Update, hands_control);
         app.add_systems(Update, feet_control);
+        // app.add_systems(Update, skin::draw_body);
     }
 }
 

@@ -39,5 +39,5 @@ fn update_ui(
     mut text: Single<&mut Text>,
     body: Single<&mut Transform, With<Body>>,
 ) {
-    text.0 = format!("Current height: {:.1}", body.translation.x);
+    text.0 = format!("Current height: {:.1}", body.translation.y);
 }

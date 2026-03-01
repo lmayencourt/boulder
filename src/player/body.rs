@@ -89,8 +89,9 @@ impl Body {
         )).id();
 
         let elbow = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(8.0))),
-            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            // Mesh2d(meshes.add(Circle::new(8.0))),
+            // Mesh2d(meshes.add(Rectangle::new(ARM_LENGTH/2.0, 10.0))),
+            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(ARM_LENGTH/2.0, 0.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -100,6 +101,10 @@ impl Body {
                 linear_damping: 5.0,
                 angular_damping: 5.0,
             },
+        )).with_child((
+            Mesh2d(meshes.add(Rectangle::new(ARM_LENGTH/2.0, 10.0))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Transform::from_xyz(ARM_LENGTH/4.0, 0.0, 0.0),
         )).id();
         let elbow_joint = RevoluteJointBuilder::new()
             // elbow anchor
@@ -121,8 +126,10 @@ impl Body {
 
         // Left arm
         let elbow = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(8.0))),
-            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            // Mesh2d(meshes.add(Circle::new(8.0))),
+            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            // Mesh2d(meshes.add(Rectangle::new(ARM_LENGTH/2.0, 10.0))),
+            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(-ARM_LENGTH/2.0, 0.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -132,6 +139,10 @@ impl Body {
                 linear_damping: 5.0,
                 angular_damping: 5.0,
             },
+        )).with_child((
+            Mesh2d(meshes.add(Rectangle::new(ARM_LENGTH/2.0, 10.0))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Transform::from_xyz(-ARM_LENGTH/4.0, 0.0, 0.0),
         )).id();
         let shoulder_joint = RevoluteJointBuilder::new()
             // shoulder anchor
@@ -165,8 +176,9 @@ impl Body {
 
 
         let hip = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(8.0))),
-            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            // Mesh2d(meshes.add(Circle::new(8.0))),
+            // Mesh2d(meshes.add(Rectangle::new(10.0, LEG_LENGTH/2.0))),
+            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(BODY_WIDTH/2.0, -BODY_HEIGHT/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -176,7 +188,14 @@ impl Body {
                 linear_damping: 5.0,
                 angular_damping: 5.0,
             },
+        )).with_child((
+            Mesh2d(meshes.add(Rectangle::new(LEG_LENGTH/2.0, 10.0))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Transform::from_xyz(0.0, -LEG_LENGTH/4.0, 0.0).with_rotation(Quat::from_rotation_z(std::f32::consts::PI/2.0)),
         )).id();
+        // let hip_skin = commands.spawn((
+        // )).set_parent_in_place(hip);
+
         let hip_joint = RevoluteJointBuilder::new()
             // body anchor
             .local_anchor1(Vec2::new(BODY_WIDTH_PHY/2.0, -BODY_HEIGHT_PHY/2.0))
@@ -187,8 +206,10 @@ impl Body {
         commands.entity(hip).insert(ImpulseJoint::new(body, hip_joint));
 
         let knee = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(10.0))),
-            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            // Mesh2d(meshes.add(Circle::new(10.0))),
+            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            // Mesh2d(meshes.add(Rectangle::new(10.0, LEG_LENGTH/2.0))),
+            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT + LEG_LENGTH/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -198,6 +219,10 @@ impl Body {
                 linear_damping: 5.0,
                 angular_damping: 5.0,
             },
+        )).with_child((
+            Mesh2d(meshes.add(Rectangle::new(LEG_LENGTH/2.0, 10.0))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Transform::from_xyz(0.0, -LEG_LENGTH/4.0, 0.0).with_rotation(Quat::from_rotation_z(std::f32::consts::PI/2.0)),
         )).id();
         let knee_joint = RevoluteJointBuilder::new()
             // knee anchor
@@ -209,8 +234,10 @@ impl Body {
         commands.entity(knee).insert(ImpulseJoint::new(hip, knee_joint));
 
         let foot = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(10.0))),
-            MeshMaterial2d(materials.add(Color::from(BLUE_200))),
+            // Mesh2d(meshes.add(Circle::new(10.0))),
+            // MeshMaterial2d(materials.add(Color::from(BLUE_200))),
+            Mesh2d(meshes.add(Rectangle::new(20.0, 10.0))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(BODY_WIDTH/2.0, -BODY_HEIGHT - LEG_LENGTH, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -236,8 +263,9 @@ impl Body {
 
         // Left leg
         let hip = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(8.0))),
-            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            // Mesh2d(meshes.add(Circle::new(8.0))),
+            // Mesh2d(meshes.add(Rectangle::new(10.0, LEG_LENGTH/2.0))),
+            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -247,6 +275,10 @@ impl Body {
                 linear_damping: 5.0,
                 angular_damping: 5.0,
             },
+        )).with_child((
+            Mesh2d(meshes.add(Rectangle::new(LEG_LENGTH/2.0, 10.0))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Transform::from_xyz(0.0, -LEG_LENGTH/4.0, 0.0).with_rotation(Quat::from_rotation_z(std::f32::consts::PI/2.0)),
         )).id();
         let hip_joint = RevoluteJointBuilder::new()
             // body anchor
@@ -258,8 +290,10 @@ impl Body {
         commands.entity(hip).insert(ImpulseJoint::new(body, hip_joint));
 
         let knee = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(10.0))),
-            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            // Mesh2d(meshes.add(Circle::new(10.0))),
+            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            // Mesh2d(meshes.add(Rectangle::new(10.0, LEG_LENGTH/2.0))),
+            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT + LEG_LENGTH/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -269,6 +303,10 @@ impl Body {
                 linear_damping: 5.0,
                 angular_damping: 5.0,
             },
+        )).with_child((
+            Mesh2d(meshes.add(Rectangle::new(LEG_LENGTH/2.0, 10.0))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Transform::from_xyz(0.0, -LEG_LENGTH/4.0, 0.0).with_rotation(Quat::from_rotation_z(std::f32::consts::PI/2.0)),
         )).id();
         let knee_joint = RevoluteJointBuilder::new()
             // knee anchor
@@ -280,8 +318,10 @@ impl Body {
         commands.entity(knee).insert(ImpulseJoint::new(hip, knee_joint));
 
         let foot = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(10.0))),
-            MeshMaterial2d(materials.add(Color::from(RED_200))),
+            // Mesh2d(meshes.add(Circle::new(10.0))),
+            // MeshMaterial2d(materials.add(Color::from(RED_200))),
+            Mesh2d(meshes.add(Rectangle::new(20.0, 10.0))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT - LEG_LENGTH, 0.0),
             Pickable::IGNORE,
             // RigidBody::Dynamic,
