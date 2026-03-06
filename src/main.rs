@@ -39,7 +39,7 @@ fn main() {
         .add_systems(Update, camera::follow_player)
         // .add_systems(Startup, setup_chain)
         .add_systems(Update, wall::holds::hand_on_holds_detection)
-        .add_systems(Update, move_hold)
+        // .add_systems(Update, move_hold)
         // .add_systems(Update, body::movement)
         .run();
 }

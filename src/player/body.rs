@@ -12,11 +12,12 @@ use crate::hand::{LeftHand, RightHand, HAND_SIZE};
 // use crate::hand::spawn;
 // use crate::physics::RigidBody;
 
-
-pub static BODY_WIDTH: f32 = 40.0;
-pub static BODY_HEIGHT: f32 = 50.0;
-pub static ARM_LENGTH: f32 = 80.0;
-pub static LEG_LENGTH: f32 = 100.0;
+// An adult body is composed of 8 head heights
+pub static BODY_HEAD_HEIGHT: f32 = 20.0;
+pub static BODY_WIDTH: f32 = BODY_HEAD_HEIGHT * 2.0;
+pub static BODY_HEIGHT: f32 = BODY_HEAD_HEIGHT * 2.0;
+pub static ARM_LENGTH: f32 = BODY_HEAD_HEIGHT * 3.0;
+pub static LEG_LENGTH: f32 = BODY_HEAD_HEIGHT * 4.0;
 pub static JOINT_SIZE: f32 = 5.0;
 
 static PHY_TO_PIX: f32 = 1.0;
@@ -34,7 +35,7 @@ pub enum Limb {
 
 #[derive(Component)]
 pub struct Body {
-    position: Vec2,
+    pub resting_position: Vec3,
     velocity: Vec2,
     pub active_limb: Option<Limb>,
 }
@@ -61,7 +62,7 @@ impl Body {
             MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(0.0, 0.0, 0.0),
             Body {
-                position: Vec2::ZERO,
+                resting_position: Vec3::ZERO,
                 velocity: Vec2::ZERO,
                 active_limb: None,
             },
@@ -74,7 +75,8 @@ impl Body {
             // Collider::capsule(vec2(0.0, -BODY_HEIGHT/2.0), vec2(0.0, BODY_HEIGHT), BODY_WIDTH/2.0),
             ColliderMassProperties::Density(8.0)
         )).with_child((
-            Mesh2d(meshes.add(Circle::new(BODY_WIDTH/2.0))),
+            Mesh2d(meshes.add(Circle::new(BODY_HEAD_HEIGHT))),
+            // Mesh2d(meshes.add(Ellipse::new(BODY_HEAD_HEIGHT/2.0, BODY_HEAD_HEIGHT))),
             MeshMaterial2d(materials.add(Color::from(GRAY_400))),
             Transform::from_xyz(0.0, BODY_HEIGHT, 0.0),
         )).id();

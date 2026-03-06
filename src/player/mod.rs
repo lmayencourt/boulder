@@ -26,6 +26,7 @@ impl Plugin for PlayerPlugin {
         app.add_systems(Update, body::body_parts_speed_limiter);
         app.add_systems(Update, hands_control);
         app.add_systems(Update, feet_control);
+        app.add_systems(Update, body_control);
         // app.add_systems(Update, skin::draw_body);
     }
 }
@@ -48,11 +49,12 @@ fn feet_control(
     let right_hand = r_right_hand.single().unwrap();
 
     let distance_threshold = 25.0;
-    let foot_offset = if keys.pressed(KeyCode::Space) {
-        LEG_LENGTH/3.0
-    } else {
-        0.0
-    };
+    let foot_offset = 0.0;
+    // let foot_offset = if keys.pressed(KeyCode::Space) {
+    //     LEG_LENGTH/3.0
+    // } else {
+    //     0.0
+    // };
 
     // let both_and_on_hold = left_hand.1.is_holding && right_hand.1.is_holding;
     let feet_can_move = body.1.active_limb.is_none();
@@ -107,6 +109,30 @@ fn feet_control(
 
     if foot_is_moving {
         reach_smoothly_target(&right_foot.0, &mut right_foot.1, right_foot_target.truncate(), &mut gizmos);
+    }
+}
+
+fn body_control(
+    mut commands: Commands,
+    keys: Res<ButtonInput<KeyCode>>,
+    mut q_body: Query<(&mut Transform, &mut Velocity, &mut Body)>,
+    mut gizmos: Gizmos,
+) {
+    let mut body = q_body.single_mut().unwrap();
+
+    let body_target_position = body.2.resting_position + Vec3::Y * BODY_HEAD_HEIGHT * 2.0;
+    gizmos.circle_2d(body_target_position.truncate(), 8.0, YELLOW_200);
+
+    let body_can_move = body.2.active_limb.is_none();
+
+    if keys.just_pressed(KeyCode::Space) {
+        // Save the resting position to calculate the maximum pulling effort
+        body.2.resting_position = body.0.translation;
+    }
+    if keys.pressed(KeyCode::Space) {
+        reach_smoothly_height(&body.0, &mut body.1, body_target_position.y, &mut gizmos);
+    } else {
+        body.2.resting_position = body.0.translation;
     }
 }
 
@@ -200,15 +226,20 @@ fn update_hand_position(
     mouse_position: &Vec2,
     gizmos: &mut Gizmos,
 ) {
-    let body_pointer_distance = body.translation.distance(mouse_position.extend(0.0));
+    let shoulder_approximated_position = body.translation + Vec3::Y * BODY_HEAD_HEIGHT;
+    let body_pointer_distance = shoulder_approximated_position.distance(mouse_position.extend(0.0));
+    // allow a small overreach to improve the playability
+    let max_reachable_distance = BODY_HEAD_HEIGHT * 5.0;
 
-    if body_pointer_distance > ARM_LENGTH * 1.5 {
+    gizmos.circle_2d(shoulder_approximated_position.truncate(), max_reachable_distance, YELLOW_100);
+
+    if body_pointer_distance > max_reachable_distance {
         let ray = Ray2d {
-                origin: body.translation.truncate(),
-                direction: Dir2::new_unchecked((mouse_position - body.translation.truncate()).normalize()),
+                origin: shoulder_approximated_position.truncate(),
+                direction: Dir2::new_unchecked((mouse_position - shoulder_approximated_position.truncate()).normalize()),
             };
 
-        let new_position = ray.origin + *ray.direction * ARM_LENGTH * 1.2;
+        let new_position = ray.origin + *ray.direction * max_reachable_distance;
         
         reach_smoothly_target(hand_transform, hand_velocity, new_position, gizmos);
     } else {
@@ -230,4 +261,21 @@ fn reach_smoothly_target(
     gizmos.ray_2d(ray.origin, *ray.direction * hand_target_distance, Color::srgb(1.0, 1.0, 0.0));
 
     body_velocity.linvel = ray.direction * hand_target_distance.min(ARM_LENGTH/2.0) * 8.0;
+}
+
+fn reach_smoothly_height(
+    body_transform: &Transform,
+    body_velocity: &mut Velocity,
+    target_height: f32,
+    gizmos: &mut Gizmos,
+) {
+    let current_target = Vec3::new(body_transform.translation.x, target_height, body_transform.translation.z);
+    let target_distance = body_transform.translation.distance(current_target);
+    let ray = Ray2d {
+        origin: body_transform.translation.truncate(),
+        direction: Dir2::new_unchecked((current_target - body_transform.translation).truncate().normalize()),
+    };
+    gizmos.ray_2d(ray.origin, *ray.direction * target_distance, Color::srgb(1.0, 1.0, 0.0));
+
+    body_velocity.linvel = ray.direction * target_distance.min(ARM_LENGTH/2.0) * 8.0;
 }
