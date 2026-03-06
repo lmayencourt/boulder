@@ -202,13 +202,13 @@ fn update_hand_position(
 ) {
     let body_pointer_distance = body.translation.distance(mouse_position.extend(0.0));
 
-    if body_pointer_distance > ARM_LENGTH {
+    if body_pointer_distance > ARM_LENGTH * 1.5 {
         let ray = Ray2d {
                 origin: body.translation.truncate(),
                 direction: Dir2::new_unchecked((mouse_position - body.translation.truncate()).normalize()),
             };
 
-        let new_position = ray.origin + *ray.direction * ARM_LENGTH;
+        let new_position = ray.origin + *ray.direction * ARM_LENGTH * 1.2;
         
         reach_smoothly_target(hand_transform, hand_velocity, new_position, gizmos);
     } else {

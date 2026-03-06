@@ -80,18 +80,31 @@ impl Body {
         )).id();
 
         // Right arm
-        let hand = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(HAND_SIZE))),
-            MeshMaterial2d(materials.add(Color::from(BLUE_300))),
-            Transform::from_xyz(ARM_LENGTH, 0.0, 0.0),
-            RightHand {
-                is_holding: true,
-            },
+        let shoulder = commands.spawn((
+            Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Transform::from_xyz(BODY_WIDTH/2.0, BODY_HEIGHT/2.0, 0.0),
             Pickable::IGNORE,
-            RigidBody::KinematicPositionBased,
+            RigidBody::Dynamic,
+            Collider::ball(4.0),
             Velocity::zero(),
-            Collider::ball(HAND_SIZE/2.0),
+            Damping {
+                linear_damping: 5.0,
+                angular_damping: 5.0,
+            },
+        )).with_child((
+            Mesh2d(meshes.add(Rectangle::new(ARM_LENGTH/2.0, 10.0))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Transform::from_xyz(ARM_LENGTH/4.0, 0.0, 0.0),
         )).id();
+        let shoulder_joint = RevoluteJointBuilder::new()
+            // body anchor
+            .local_anchor1(Vec2::new(BODY_WIDTH/2.0, BODY_HEIGHT/2.0))
+            // shoulder anchor
+            .local_anchor2(Vec2::ZERO)
+            // .limits([0.0, 180.0_f32.to_radians()])
+            .build();
+        commands.entity(shoulder).insert(ImpulseJoint::new(body, shoulder_joint));
 
         let elbow = commands.spawn((
             Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
@@ -112,23 +125,62 @@ impl Body {
         )).id();
         let elbow_joint = RevoluteJointBuilder::new()
             // elbow anchor
-            .local_anchor1(Vec2::ZERO)
+            .local_anchor1(Vec2::new(ARM_LENGTH_PHY/2.0, 0.0))
             // hand anchor
-            .local_anchor2(Vec2::new(ARM_LENGTH_PHY/2.0, 0.0))
+            .local_anchor2(Vec2::ZERO)
             // .limits([0.0, 180.0_f32.to_radians()])
             .build();
-        commands.entity(elbow).insert(ImpulseJoint::new(hand, elbow_joint));
+        commands.entity(elbow).insert(ImpulseJoint::new(shoulder, elbow_joint));
 
-        let shoulder_joint = RevoluteJointBuilder::new()
-            // elbow anchor
-            .local_anchor1(Vec2::new(0.0, 0.0))
-            // shoulder anchor
-            .local_anchor2(Vec2::new(ARM_LENGTH_PHY/2.0, 0.0))
+        let hand = commands.spawn((
+            Mesh2d(meshes.add(Circle::new(HAND_SIZE))),
+            MeshMaterial2d(materials.add(Color::from(BLUE_300))),
+            Transform::from_xyz(ARM_LENGTH, 0.0, 0.0),
+            RightHand {
+                is_holding: true,
+            },
+            Pickable::IGNORE,
+            RigidBody::KinematicPositionBased,
+            Velocity::zero(),
+            Collider::ball(HAND_SIZE/2.0),
+        )).id();
+        let hand_joint = RevoluteJointBuilder::new()
+            // hand anchor
+            .local_anchor1(Vec2::new(ARM_LENGTH_PHY/2.0, 0.0))
+            // hand anchor
+            .local_anchor2(Vec2::ZERO)
             // .limits([0.0, 180.0_f32.to_radians()])
             .build();
-        commands.entity(body).insert(ImpulseJoint::new(elbow, shoulder_joint));
+        commands.entity(hand).insert(ImpulseJoint::new(elbow, hand_joint));
+
 
         // Left arm
+        let shoulder = commands.spawn((
+            Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Transform::from_xyz(-BODY_WIDTH/2.0, BODY_HEIGHT/2.0, 0.0),
+            Pickable::IGNORE,
+            RigidBody::Dynamic,
+            Collider::ball(4.0),
+            Velocity::zero(),
+            Damping {
+                linear_damping: 5.0,
+                angular_damping: 5.0,
+            },
+        )).with_child((
+            Mesh2d(meshes.add(Rectangle::new(ARM_LENGTH/2.0, 10.0))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Transform::from_xyz(-ARM_LENGTH/4.0, 0.0, 0.0),
+        )).id();
+        let shoulder_joint = RevoluteJointBuilder::new()
+            // body anchor
+            .local_anchor1(Vec2::new(-BODY_WIDTH/2.0, BODY_HEIGHT/2.0))
+            // shoulder anchor
+            .local_anchor2(Vec2::ZERO)
+            // .limits([0.0, 180.0_f32.to_radians()])
+            .build();
+        commands.entity(shoulder).insert(ImpulseJoint::new(body, shoulder_joint));
+
         let elbow = commands.spawn((
             Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
             MeshMaterial2d(materials.add(Color::from(GRAY_300))),
@@ -146,14 +198,14 @@ impl Body {
             MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(-ARM_LENGTH/4.0, 0.0, 0.0),
         )).id();
-        let shoulder_joint = RevoluteJointBuilder::new()
+        let elbow_joint = RevoluteJointBuilder::new()
             // shoulder anchor
-            .local_anchor1(Vec2::new(-ARM_LENGTH_PHY/2.0, BODY_HEIGHT/2.0))
+            .local_anchor1(Vec2::new(-ARM_LENGTH_PHY/2.0, 0.0))
             // elbow anchor
             .local_anchor2(Vec2::ZERO)
             // .limits([0.0, 180.0_f32.to_radians()])
             .build();
-        commands.entity(elbow).insert(ImpulseJoint::new(body, shoulder_joint));
+        commands.entity(elbow).insert(ImpulseJoint::new(shoulder, elbow_joint));
 
         let hand = commands.spawn((
             Mesh2d(meshes.add(Circle::new(HAND_SIZE))),
