@@ -17,6 +17,7 @@ pub static BODY_WIDTH: f32 = 40.0;
 pub static BODY_HEIGHT: f32 = 50.0;
 pub static ARM_LENGTH: f32 = 80.0;
 pub static LEG_LENGTH: f32 = 100.0;
+pub static JOINT_SIZE: f32 = 5.0;
 
 static PHY_TO_PIX: f32 = 1.0;
 static BODY_WIDTH_PHY: f32 = 40.0 / PHY_TO_PIX;
@@ -67,11 +68,15 @@ impl Body {
             Pickable::IGNORE,
             RigidBody::Dynamic,
             Velocity::zero(),
-            Collider::capsule(vec2(0.0, -BODY_HEIGHT/2.0), vec2(0.0, BODY_HEIGHT/2.0), BODY_WIDTH/2.0),
-            // Collider::ball(BODY_WIDTH/2.0),
+            // Collider::capsule(vec2(0.0, -BODY_HEIGHT/2.0), vec2(0.0, BODY_HEIGHT/2.0), BODY_WIDTH/2.0),
+            Collider::ball(BODY_WIDTH/2.0),
             // Collider::cuboid(15.0, 50.0),
             // Collider::capsule(vec2(0.0, -BODY_HEIGHT/2.0), vec2(0.0, BODY_HEIGHT), BODY_WIDTH/2.0),
             ColliderMassProperties::Density(8.0)
+        )).with_child((
+            Mesh2d(meshes.add(Circle::new(BODY_WIDTH/2.0))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_400))),
+            Transform::from_xyz(0.0, BODY_HEIGHT, 0.0),
         )).id();
 
         // Right arm
@@ -89,9 +94,8 @@ impl Body {
         )).id();
 
         let elbow = commands.spawn((
-            // Mesh2d(meshes.add(Circle::new(8.0))),
-            // Mesh2d(meshes.add(Rectangle::new(ARM_LENGTH/2.0, 10.0))),
-            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(ARM_LENGTH/2.0, 0.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -126,10 +130,8 @@ impl Body {
 
         // Left arm
         let elbow = commands.spawn((
-            // Mesh2d(meshes.add(Circle::new(8.0))),
-            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
-            // Mesh2d(meshes.add(Rectangle::new(ARM_LENGTH/2.0, 10.0))),
-            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(-ARM_LENGTH/2.0, 0.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -176,9 +178,8 @@ impl Body {
 
 
         let hip = commands.spawn((
-            // Mesh2d(meshes.add(Circle::new(8.0))),
-            // Mesh2d(meshes.add(Rectangle::new(10.0, LEG_LENGTH/2.0))),
-            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(BODY_WIDTH/2.0, -BODY_HEIGHT/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -193,8 +194,6 @@ impl Body {
             MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(0.0, -LEG_LENGTH/4.0, 0.0).with_rotation(Quat::from_rotation_z(std::f32::consts::PI/2.0)),
         )).id();
-        // let hip_skin = commands.spawn((
-        // )).set_parent_in_place(hip);
 
         let hip_joint = RevoluteJointBuilder::new()
             // body anchor
@@ -206,10 +205,8 @@ impl Body {
         commands.entity(hip).insert(ImpulseJoint::new(body, hip_joint));
 
         let knee = commands.spawn((
-            // Mesh2d(meshes.add(Circle::new(10.0))),
-            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
-            // Mesh2d(meshes.add(Rectangle::new(10.0, LEG_LENGTH/2.0))),
-            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT + LEG_LENGTH/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -234,7 +231,7 @@ impl Body {
         commands.entity(knee).insert(ImpulseJoint::new(hip, knee_joint));
 
         let foot = commands.spawn((
-            // Mesh2d(meshes.add(Circle::new(10.0))),
+            // Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
             // MeshMaterial2d(materials.add(Color::from(BLUE_200))),
             Mesh2d(meshes.add(Rectangle::new(20.0, 10.0))),
             MeshMaterial2d(materials.add(Color::from(GRAY_300))),
@@ -263,9 +260,8 @@ impl Body {
 
         // Left leg
         let hip = commands.spawn((
-            // Mesh2d(meshes.add(Circle::new(8.0))),
-            // Mesh2d(meshes.add(Rectangle::new(10.0, LEG_LENGTH/2.0))),
-            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -290,10 +286,8 @@ impl Body {
         commands.entity(hip).insert(ImpulseJoint::new(body, hip_joint));
 
         let knee = commands.spawn((
-            // Mesh2d(meshes.add(Circle::new(10.0))),
-            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
-            // Mesh2d(meshes.add(Rectangle::new(10.0, LEG_LENGTH/2.0))),
-            // MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT + LEG_LENGTH/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -318,7 +312,7 @@ impl Body {
         commands.entity(knee).insert(ImpulseJoint::new(hip, knee_joint));
 
         let foot = commands.spawn((
-            // Mesh2d(meshes.add(Circle::new(10.0))),
+            // Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
             // MeshMaterial2d(materials.add(Color::from(RED_200))),
             Mesh2d(meshes.add(Rectangle::new(20.0, 10.0))),
             MeshMaterial2d(materials.add(Color::from(GRAY_300))),
