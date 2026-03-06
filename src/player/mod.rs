@@ -62,11 +62,11 @@ fn feet_control(
 
     // Find best foot position
     let body_to_hand_distance = body.0.translation.distance(left_hand.0.translation);
-    let left_foot_target = body.0.translation + Vec3::new(-BODY_WIDTH/2.0 - body_to_hand_distance/2.0, -BODY_HEIGHT/2.0 - LEG_LENGTH/1.5 + foot_offset, 0.0);
+    let left_foot_target = body.0.translation + Vec3::new(-BODY_WIDTH/2.0 - body_to_hand_distance/2.0, -BODY_HEIGHT/2.0 - LEG_LENGTH/2.5 + foot_offset, 0.0);
     gizmos.circle_2d(left_foot_target.truncate(), 4.0, RED_200);
     // Right foot
     let body_to_hand_distance = body.0.translation.distance(right_hand.0.translation);
-    let right_foot_target = body.0.translation + Vec3::new(BODY_WIDTH/2.0 + body_to_hand_distance/2.0, -BODY_HEIGHT/2.0 - LEG_LENGTH/1.5 + foot_offset, 0.0);
+    let right_foot_target = body.0.translation + Vec3::new(BODY_WIDTH/2.0 + body_to_hand_distance/2.0, -BODY_HEIGHT/2.0 - LEG_LENGTH/2.5 + foot_offset, 0.0);
     gizmos.circle_2d(right_foot_target.truncate(), 4.0, BLUE_200);
 
     // Left foot
