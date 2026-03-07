@@ -10,9 +10,10 @@ use bevy::{
 use bevy_rapier2d::prelude::*;
 use rand::prelude::*;
 
-mod player;
 mod camera;
+mod corbusier_colors;
 mod mouse;
+mod player;
 mod ui;
 mod wall;
 // mod physics;
@@ -33,6 +34,7 @@ fn main() {
         .add_plugins(MousePlugin)
         .add_plugins(UiPlugin)
         .add_plugins(PlayerPlugin)
+        .add_plugins(WallPlugin)
         .insert_resource(wall::holds::LeftHandOnHold(false))
         .insert_resource(wall::holds::RightHandOnHold(false))
         .add_systems(Startup, setup_system)
@@ -59,10 +61,6 @@ fn setup_system(
 ) {
     // Spawn a 2D camera
     commands.spawn((Camera2d, MainCamera));
-
-    // Spawn a simple wall with holds to climb
-    let path = wall::route::Path::new(500.0);
-    path.spawn(&mut commands, &mut meshes, &mut materials);
 
     // Spawn the body
     Body::spawn(&mut commands, &mut meshes, &mut materials);

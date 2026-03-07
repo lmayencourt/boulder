@@ -22,10 +22,13 @@ pub struct LeftHandOnHold(pub bool);
 #[derive(Resource)]
 pub struct RightHandOnHold(pub bool);
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy)]
 pub struct Hold {
     pub position: Vec2,
 }
+
+#[derive(Component)]
+pub struct LastHold;
 
 impl Hold {
     pub fn new(position: Vec2) -> Self {
@@ -38,19 +41,29 @@ impl Hold {
         meshes: &mut ResMut<Assets<Mesh>>,
         materials: &mut ResMut<Assets<ColorMaterial>>,
     ) {
-        println!("Spawning hold at position: {:?}", self.position);
-
-        let default_matl = materials.add(Color::from(GRAY_300));
-        let hover_matl = materials.add(Color::from(CYAN_100));
-
+        println!("Spawing hold at {}", self.position);
         commands.spawn((
             Mesh2d(meshes.add(Rectangle::new(HOLD_SIZE.x, HOLD_SIZE.y))),
-            MeshMaterial2d(default_matl.clone()),
+            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
             Transform::from_xyz(self.position.x, self.position.y, 0.0),
             self,
         ));
-            // .observe(update_material_on::<Pointer<Over>>(hover_matl.clone()))
-            // .observe(update_material_on::<Pointer<Out>>(default_matl.clone()));
+    }
+
+    pub fn spawn_last(
+        self,
+        commands: &mut Commands,
+        meshes: &mut ResMut<Assets<Mesh>>,
+        materials: &mut ResMut<Assets<ColorMaterial>>,
+    ) {
+        println!("Spawing last hold at {}", self.position);
+        commands.spawn((
+            Mesh2d(meshes.add(Rectangle::new(HOLD_SIZE.x, HOLD_SIZE.y))),
+            MeshMaterial2d(materials.add(Color::from(RED_500))),
+            Transform::from_xyz(self.position.x, self.position.y, 0.0),
+            LastHold,
+            self,
+        ));
     }
 }
 
@@ -106,7 +119,7 @@ pub fn hand_on_holds_detection(
     // println!("Left hand on hold: {}, Right hand on hold: {}", r_l_hand_on_hold.0, r_r_hand_on_hold.0);
 }
 
-fn is_hand_on_hold(
+pub fn is_hand_on_hold(
     hand_transform: &Transform,
     hold_transform: &Transform,
     mut gizmos: &mut Gizmos,
