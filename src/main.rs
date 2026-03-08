@@ -24,6 +24,13 @@ use ui::UiPlugin;
 use wall::*;
 // use physics::*;
 
+#[derive(States, Default, Debug, Clone, Eq, PartialEq, Hash)]
+enum GameState {
+    #[default]
+    Playing,
+    LevelSelection,
+}
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -35,6 +42,7 @@ fn main() {
         .add_plugins(UiPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(WallPlugin)
+        .init_state::<GameState>()
         .insert_resource(wall::holds::LeftHandOnHold(false))
         .insert_resource(wall::holds::RightHandOnHold(false))
         .add_systems(Startup, setup_system)

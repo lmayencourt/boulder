@@ -16,6 +16,17 @@ static WALL_WIDTH: f32 = 150.0;
 #[derive(Message, Default)]
 pub struct PlayerReachedLastHold;
 
+#[derive(Message, Default)]
+pub struct SwitchToRoute {
+    pub route_name: String,
+}
+
+impl SwitchToRoute {
+    pub fn new(route_name: String) -> Self {
+        SwitchToRoute { route_name }
+    }
+}
+
 pub struct Path {
     pub holds: Vec<Hold>,
 }

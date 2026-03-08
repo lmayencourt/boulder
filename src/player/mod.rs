@@ -15,6 +15,7 @@ pub mod body;
 pub mod hand;
 mod skin;
 
+use crate::GameState;
 pub use body::*;
 use hand::*;
 
@@ -24,9 +25,9 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         // app.add_systems(Startup, skin::setup_body_skin);
         app.add_systems(Update, body::body_parts_speed_limiter);
-        app.add_systems(Update, hands_control);
-        app.add_systems(Update, feet_control);
-        app.add_systems(Update, body_control);
+        app.add_systems(Update, hands_control.run_if(in_state(GameState::Playing)));
+        app.add_systems(Update, feet_control.run_if(in_state(GameState::Playing)));
+        app.add_systems(Update, body_control.run_if(in_state(GameState::Playing)));
         // app.add_systems(Update, skin::draw_body);
     }
 }
