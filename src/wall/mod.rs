@@ -27,14 +27,14 @@ fn setup_wall(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    mut evw_new_route: MessageWriter<SwitchToRoute>,
 ) {
     // Spawn the first hold at 0, 0
     let hold = Hold::new(Vec2::new(0.0, 0.0));
     hold.spawn(&mut commands, &mut meshes, &mut materials);
 
     // Spawn a simple wall with holds to climb
-    let path = route::Path::new(200.0);
-    path.spawn(&mut commands, &mut meshes, &mut materials);
+    evw_new_route.write(SwitchToRoute { route_name: "First challenge".to_owned() });
 }
 
 fn update_wall(
@@ -43,9 +43,17 @@ fn update_wall(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut events: MessageReader<PlayerReachedLastHold>,
     mut evr_new_route: MessageReader<SwitchToRoute>,
+    mut q_holds: Query<Entity, With<Hold>>,
 ) {
-    // If player reached the last hold of the current wall, spawn the next section
+    // Spawn the new wall
     for event in evr_new_route.read() {
+        // Clear the current stage
+        for hold in q_holds.iter() {
+            commands.entity(hold).despawn();
+        }
+
         println!("Creating a new route {}", event.route_name);
+        let path = route::Path::new(&event.route_name);
+        path.spawn(&mut commands, &mut meshes, &mut materials);
     }
 }

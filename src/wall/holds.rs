@@ -41,7 +41,7 @@ impl Hold {
         meshes: &mut ResMut<Assets<Mesh>>,
         materials: &mut ResMut<Assets<ColorMaterial>>,
     ) {
-        println!("Spawing hold at {}", self.position);
+        debug!("Spawing hold at {}", self.position);
         commands.spawn((
             Mesh2d(meshes.add(Rectangle::new(HOLD_SIZE.x, HOLD_SIZE.y))),
             MeshMaterial2d(materials.add(Color::from(GRAY_300))),
@@ -56,7 +56,7 @@ impl Hold {
         meshes: &mut ResMut<Assets<Mesh>>,
         materials: &mut ResMut<Assets<ColorMaterial>>,
     ) {
-        println!("Spawing last hold at {}", self.position);
+        debug!("Spawing last hold at {}", self.position);
         commands.spawn((
             Mesh2d(meshes.add(Rectangle::new(HOLD_SIZE.x, HOLD_SIZE.y))),
             MeshMaterial2d(materials.add(Color::from(RED_500))),

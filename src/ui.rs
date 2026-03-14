@@ -65,7 +65,7 @@ fn setup_ui(
             ..default()
         },
         LevelSelector {
-            current_level: String::from("0"),
+            current_level: String::from("First challenge"),
             ..default()
         },
     ));
@@ -98,6 +98,7 @@ fn level_selector(
                         next_state.set(GameState::LevelSelection);
                     },
                     LevelEditingMode::Enable => {
+                        println!("Switching to new level {}", level_selector.1.user_input);
                         level_selector.1.current_edit_mode = LevelEditingMode::Disable;
                         level_selector.1.current_level = level_selector.1.user_input.clone();
                         level_selector.1.user_input = String::default();
