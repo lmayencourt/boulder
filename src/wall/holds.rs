@@ -11,6 +11,7 @@ use bevy::{
 };
 
 use bevy_rapier2d::prelude::*;
+use crate::corbusier_colors::*;
 
 use crate::hand::{LeftHand, RightHand, HAND_SIZE};
 
@@ -44,7 +45,7 @@ impl Hold {
         debug!("Spawing hold at {}", self.position);
         commands.spawn((
             Mesh2d(meshes.add(Rectangle::new(HOLD_SIZE.x, HOLD_SIZE.y))),
-            MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+            MeshMaterial2d(materials.add(Color::from(COLOR_WHITE))),
             Transform::from_xyz(self.position.x, self.position.y, 0.0),
             self,
         ));
@@ -90,7 +91,7 @@ pub fn hand_on_holds_detection(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut gizmos: Gizmos,
 ) {
-    let default_matl = materials.add(Color::from(GRAY_300));
+    let default_matl = materials.add(Color::from(COLOR_WHITE));
     let hover_matl = materials.add(Color::from(CYAN_300));
 
     let mut l_hand_on_any_hold = false;
