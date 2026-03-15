@@ -15,7 +15,7 @@ use crate::hand::{LeftHand, RightHand, HAND_SIZE};
 // An adult body is composed of 8 head heights
 pub static BODY_HEAD_HEIGHT: f32 = 20.0;
 pub static BODY_WIDTH: f32 = BODY_HEAD_HEIGHT * 2.0;
-pub static BODY_HEIGHT: f32 = BODY_HEAD_HEIGHT * 2.0;
+pub static BODY_HEIGHT: f32 = BODY_HEAD_HEIGHT * 1.8;
 pub static ARM_LENGTH: f32 = BODY_HEAD_HEIGHT * 3.0;
 pub static LEG_LENGTH: f32 = BODY_HEAD_HEIGHT * 4.0;
 pub static JOINT_SIZE: f32 = 5.0;
@@ -75,8 +75,9 @@ impl Body {
             // Collider::capsule(vec2(0.0, -BODY_HEIGHT/2.0), vec2(0.0, BODY_HEIGHT), BODY_WIDTH/2.0),
             ColliderMassProperties::Density(8.0)
         )).with_child((
-            Mesh2d(meshes.add(Circle::new(BODY_HEAD_HEIGHT))),
-            // Mesh2d(meshes.add(Ellipse::new(BODY_HEAD_HEIGHT/2.0, BODY_HEAD_HEIGHT))),
+            // Mesh2d(meshes.add(Circle::new(BODY_HEAD_HEIGHT))),
+            // Mesh2d(meshes.add(Ellipse::new(BODY_HEAD_HEIGHT/1.5, BODY_HEAD_HEIGHT))),
+            Mesh2d(meshes.add(Capsule2d::new(BODY_HEAD_HEIGHT/1.5, BODY_HEAD_HEIGHT/1.8))),
             MeshMaterial2d(materials.add(Color::from(GRAY_400))),
             Transform::from_xyz(0.0, BODY_HEIGHT, 0.0),
         )).id();

@@ -51,6 +51,7 @@ fn main() {
         .add_systems(Update, wall::holds::hand_on_holds_detection)
         // .add_systems(Update, move_hold)
         // .add_systems(Update, body::movement)
+        .add_systems(Update, toogle_gizmos_visibility)
         .run();
 }
 
@@ -66,9 +67,14 @@ fn setup_system(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    mut config_store: ResMut<GizmoConfigStore>,
 ) {
     // Spawn a 2D camera
     commands.spawn((Camera2d, MainCamera));
+
+    // By default, disable the debug gizmos
+    let (config, _) = config_store.config_mut::<DefaultGizmoConfigGroup>();
+    config.enabled = false;
 
     // Spawn the body
     Body::spawn(&mut commands, &mut meshes, &mut materials);
@@ -255,5 +261,15 @@ fn setup_chain(mut commands: Commands) {
     // last link is fixed (anchor)
     if let Some(last) = previous {
         commands.entity(last).insert((RigidBody::Fixed, Tail));
+    }
+}
+
+fn toogle_gizmos_visibility(
+    mut config_store: ResMut<GizmoConfigStore>,
+    keys: Res<ButtonInput<KeyCode>>,
+) {
+    let (config, _) = config_store.config_mut::<DefaultGizmoConfigGroup>();
+    if keys.just_pressed(KeyCode::Digit1) {
+        config.enabled = !config.enabled;
     }
 }
