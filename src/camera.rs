@@ -18,6 +18,6 @@ pub fn follow_player(
     let mut camera_transform = q_camera.single_mut().unwrap();
 
     // Smoothly interpolate the camera's position towards the body
-    let target_position = Vec3::new(body_transform.translation.x, body_transform.translation.y, camera_transform.translation.z);
+    let target_position = Vec3::new(0.0, body_transform.translation.y, camera_transform.translation.z);
     camera_transform.translation = camera_transform.translation.lerp(target_position, 0.1);
 }
