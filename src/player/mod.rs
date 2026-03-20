@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MIT
 * Copyright (c) 2026 Louis Mayencourt
 */
+use std::cmp::Ordering;
 
 use bevy::{
     prelude::*,
@@ -113,6 +114,10 @@ fn feet_control(
     if foot_is_moving {
         reach_smoothly_target(&right_foot.0, &mut right_foot.1, right_foot_target.truncate(), &mut gizmos);
     }
+
+    // Update body internal position tracking
+    body.1.left_leg.end = *left_foot.0;
+    body.1.right_leg.end = *right_foot.0;
 }
 
 fn body_control(
@@ -166,7 +171,7 @@ fn hands_control(
     }
 
     if keys.pressed(KeyCode::KeyA) {
-        update_hand_position(&body.0, &hand_components.0, &mut hand_components.1, &mouse_position.world_position, &mut gizmos);
+        update_hand_position(&body.1, &body.0, &hand_components.0, &mut hand_components.1, &mouse_position.world_position, &mut gizmos);
         // hand_components.1.linvel = Vec2::new(0.0, 0.0);
     }
 
@@ -198,7 +203,7 @@ fn hands_control(
     }
 
     if keys.pressed(KeyCode::KeyS) {
-        update_hand_position(&body.0, &hand_components.0, &mut hand_components.1, &mouse_position.world_position, &mut gizmos);
+        update_hand_position(&body.1, &body.0, &hand_components.0, &mut hand_components.1, &mouse_position.world_position, &mut gizmos);
         // hand_components.1.linvel = Vec2::new(0.0, 0.0);
     }
 
@@ -232,31 +237,62 @@ fn hands_control(
 }
 
 fn update_hand_position(
-    body: &Transform,
+    body: &Body,
+    body_transform: &Transform,
     hand_transform: &Transform,
     hand_velocity: &mut Velocity,
     mouse_position: &Vec2,
     gizmos: &mut Gizmos,
 ) {
-    let shoulder_approximated_position = body.translation + Vec3::Y * BODY_HEAD_HEIGHT;
-    let body_pointer_distance = shoulder_approximated_position.distance(mouse_position.extend(0.0));
+    // Keep track of multiple restriction distances, from shoulder and feet
+    let mut distance_limiters = Vec::new();
+
+    // Compute the max distance from body
+    let shoulder_approximated_position = body_transform.translation + Vec3::Y * BODY_HEAD_HEIGHT;
+    let shoulder_pointer_distance = shoulder_approximated_position.distance(mouse_position.extend(0.0));
     // allow a small overreach to improve the playability
-    let max_reachable_distance = BODY_HEAD_HEIGHT * 5.0;
+    let arm_reachable_distance = BODY_HEAD_HEIGHT * 5.0;
+    let ray = Ray2d {
+        origin: shoulder_approximated_position.truncate(),
+        direction: Dir2::new_unchecked((mouse_position - shoulder_approximated_position.truncate()).normalize()),
+    };
+    let restricted_point = ray.origin + *ray.direction * arm_reachable_distance;
+    distance_limiters.push(shoulder_approximated_position.distance(restricted_point.extend(0.0)));
 
-    gizmos.circle_2d(shoulder_approximated_position.truncate(), max_reachable_distance, YELLOW_100);
+    gizmos.circle_2d(shoulder_approximated_position.truncate(), arm_reachable_distance, YELLOW_100);
 
-    if body_pointer_distance > max_reachable_distance {
+    // Compute the max distance from foot
+    let max_foot_hand_distance = BODY_HEAD_HEIGHT * 11.0;
+    let ray = Ray2d {
+        origin: body.left_leg.end.translation.truncate(),
+        direction: Dir2::new_unchecked((mouse_position - body.left_leg.end.translation.truncate()).normalize()),
+    };
+    let restricted_point = ray.origin + *ray.direction * max_foot_hand_distance;
+    distance_limiters.push(shoulder_approximated_position.distance(restricted_point.extend(0.0)));
+    gizmos.circle_2d(body.left_leg.end.translation.truncate(), max_foot_hand_distance, YELLOW_100);
+
+    let ray = Ray2d {
+        origin: body.right_leg.end.translation.truncate(),
+        direction: Dir2::new_unchecked((mouse_position - body.right_leg.end.translation.truncate()).normalize()),
+    };
+    let restricted_point = ray.origin + *ray.direction * max_foot_hand_distance;
+    distance_limiters.push(shoulder_approximated_position.distance(restricted_point.extend(0.0)));
+    gizmos.circle_2d(body.right_leg.end.translation.truncate(), max_foot_hand_distance, YELLOW_100);
+
+    // keep only the shortest position
+    let min_limiter = distance_limiters.into_iter().min_by(|a, b|
+        a.partial_cmp(&b).unwrap_or(Ordering::Less)).unwrap();
+    let new_position = if shoulder_pointer_distance > min_limiter {
         let ray = Ray2d {
-                origin: shoulder_approximated_position.truncate(),
-                direction: Dir2::new_unchecked((mouse_position - shoulder_approximated_position.truncate()).normalize()),
-            };
-
-        let new_position = ray.origin + *ray.direction * max_reachable_distance;
-        
-        reach_smoothly_target(hand_transform, hand_velocity, new_position, gizmos);
+            origin: shoulder_approximated_position.truncate(),
+            direction: Dir2::new_unchecked((mouse_position - shoulder_approximated_position.truncate()).normalize()),
+        };
+        ray.origin + *ray.direction * min_limiter
     } else {
-        reach_smoothly_target(hand_transform, hand_velocity, *mouse_position, gizmos);
-    }
+        *mouse_position
+    };
+    
+    reach_smoothly_target(hand_transform, hand_velocity, new_position, gizmos);
 }
 
 fn reach_smoothly_target(
