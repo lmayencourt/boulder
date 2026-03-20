@@ -9,9 +9,11 @@ use bevy::{
 };
 use bevy_rapier2d::prelude::*;
 use rand::prelude::*;
+use bevy_prototype_lyon::prelude::*;
 
 mod camera;
 mod corbusier_colors;
+mod mesh_drawing;
 mod mouse;
 mod player;
 mod ui;
@@ -38,6 +40,7 @@ fn main() {
         // .add_plugins(PhysicsPlugin)
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_plugins(RapierDebugRenderPlugin::default())
+        .add_plugins(ShapePlugin)
         .add_plugins(MousePlugin)
         .add_plugins(UiPlugin)
         .add_plugins(PlayerPlugin)

@@ -74,12 +74,12 @@ fn feet_control(
 
     // Left foot
     let distance_to_target = left_foot.0.translation.distance(left_foot_target);
-    let foot_is_moving = body.1.active_limb == Some(Limb::LeftFoot);
+    let foot_is_moving = body.1.active_limb == Some(LimbType::LeftFoot);
 
     // if !left_foot.3.is_moving && distance_to_target > distance_threshold && feet_can_move{
     if !foot_is_moving && feet_can_move && distance_to_target > distance_threshold {
             left_foot.3.is_moving = true;
-            body.1.active_limb = Some(Limb::LeftFoot);
+            body.1.active_limb = Some(LimbType::LeftFoot);
             commands.entity(left_foot.2).remove::<RigidBody>();
             commands.entity(left_foot.2).insert(RigidBody::KinematicVelocityBased);
     } else if foot_is_moving && distance_to_target < 2.0 {
@@ -95,12 +95,12 @@ fn feet_control(
 
     // Right feet
     let distance_to_target = right_foot.0.translation.distance(right_foot_target);
-    let foot_is_moving = body.1.active_limb == Some(Limb::RightFoot);
+    let foot_is_moving = body.1.active_limb == Some(LimbType::RightFoot);
 
     // if !right_foot.3.is_moving && distance_to_target > distance_threshold && feet_can_move{
     if !foot_is_moving && feet_can_move && distance_to_target > distance_threshold {
             right_foot.3.is_moving = true;
-            body.1.active_limb = Some(Limb::RightFoot);
+            body.1.active_limb = Some(LimbType::RightFoot);
             commands.entity(right_foot.2).remove::<RigidBody>();
             commands.entity(right_foot.2).insert(RigidBody::KinematicVelocityBased);
     } else if foot_is_moving && distance_to_target < 2.0 {
@@ -137,6 +137,9 @@ fn body_control(
     } else {
         body.2.resting_position = body.0.translation;
     }
+
+    // update body internal position tracking
+    body.2.position = *body.0;
 }
 
 fn hands_control(
@@ -158,7 +161,7 @@ fn hands_control(
     if keys.just_pressed(KeyCode::KeyA) {
         println!("Disable gravity on left hand");
         hand_components.3.is_holding = false;
-        body.1.active_limb = Some(Limb::LeftHand);
+        body.1.active_limb = Some(LimbType::LeftHand);
         hand::disable_gravity(&mut commands, hand_components.2);
     }
 
@@ -181,13 +184,16 @@ fn hands_control(
         hand_components.1.angvel = 0.0;
     }
 
+    // update body internal position tracking
+    body.1.left_arm.end = *hand_components.0;
+
     // if !buttons.pressed(MouseButton::Right) || !keys.pressed(KeyCode::KeyS) {
     let mut hand_components = q_right_hand.single_mut().unwrap();
 
     if keys.just_pressed(KeyCode::KeyS) {
         println!("Disable gravity on right hand");
         hand_components.3.is_holding = false;
-        body.1.active_limb = Some(Limb::RightHand);
+        body.1.active_limb = Some(LimbType::RightHand);
         hand::disable_gravity(&mut commands, hand_components.2);
     }
 
@@ -209,6 +215,9 @@ fn hands_control(
         hand_components.1.linvel = Vec2::ZERO;
         hand_components.1.angvel = 0.0;
     }
+
+    // update body internal position tracking
+    body.1.right_arm.end = *hand_components.0;
 
     // Hand can not overlap
     // let mut left_hand = q_left_hand.single_mut().unwrap();

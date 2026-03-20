@@ -7,9 +7,11 @@ use bevy::{
     color::palettes::tailwind::*,
 };
 use bevy_rapier2d::prelude::*;
+use bevy_prototype_lyon::prelude::*;
 
 use crate::hand::{LeftHand, RightHand, HAND_SIZE};
 use crate::corbusier_colors::*;
+use crate::mesh_drawing::*;
 // use crate::hand::spawn;
 // use crate::physics::RigidBody;
 
@@ -18,7 +20,9 @@ pub static BODY_HEAD_HEIGHT: f32 = 20.0;
 pub static BODY_WIDTH: f32 = BODY_HEAD_HEIGHT * 2.2;
 pub static BODY_HEIGHT: f32 = BODY_HEAD_HEIGHT * 1.8;
 pub static ARM_LENGTH: f32 = BODY_HEAD_HEIGHT * 3.0;
+pub static ARM_WIDTH: f32 = BODY_HEAD_HEIGHT / 2.0;
 pub static LEG_LENGTH: f32 = BODY_HEAD_HEIGHT * 4.0;
+pub static LEG_WIDTH: f32 = BODY_HEAD_HEIGHT / 1.5;
 pub static JOINT_SIZE: f32 = 5.0;
 
 static PHY_TO_PIX: f32 = 1.0;
@@ -27,18 +31,29 @@ static BODY_HEIGHT_PHY: f32 = BODY_HEIGHT / PHY_TO_PIX;
 static ARM_LENGTH_PHY: f32 = ARM_LENGTH / PHY_TO_PIX;
 
 #[derive(PartialEq)]
-pub enum Limb {
+pub enum LimbType {
     LeftHand,
     RightHand,
     LeftFoot,
     RightFoot,
 }
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct Body {
+    pub position: Transform,
     pub resting_position: Vec3,
-    velocity: Vec2,
-    pub active_limb: Option<Limb>,
+    pub active_limb: Option<LimbType>,
+    pub left_arm: Limb,
+    pub right_arm: Limb,
+    pub left_leg: Limb,
+    pub right_leg: Limb,
+}
+
+#[derive(Default)]
+pub struct Limb {
+    pub anchor_point: Transform,
+    pub joint: Transform,
+    pub end: Transform,
 }
 
 #[derive(Component)]
@@ -58,20 +73,31 @@ impl Body {
         mut materials: &mut ResMut<Assets<ColorMaterial>>,
     ) {
 
+        // Body shape
+        let body_points = [
+            // Start with the right side
+            // higher neck
+            Vec2::new(BODY_HEAD_HEIGHT/3.0, BODY_HEIGHT/1.),
+            // lower neck
+            Vec2::new(BODY_HEAD_HEIGHT/2.8, BODY_HEIGHT/1.4),
+            // Shoulders
+            Vec2::new(BODY_WIDTH/1.7, BODY_HEIGHT/2.0),
+            // pelvis higher part
+            Vec2::new(0.0 + BODY_WIDTH/3.0, -BODY_HEIGHT/1.5),
+            // pelvis lower part
+            Vec2::new(0.0 + BODY_WIDTH/2.5, -BODY_HEIGHT),
+            // pelvis bottom
+            Vec2::new(BODY_HEAD_HEIGHT/4.0, -BODY_HEIGHT - BODY_WIDTH/3.0),
+        ];
+        let body_points = mirror_mesh_on_y_axis(&body_points);
+        let body_shape = shapes::Polygon {
+            points: body_points.into_iter().collect(),
+            closed: false,
+        };
+
         let body = commands.spawn((
-            // Mesh2d(meshes.add(Capsule2d::new(BODY_WIDTH/2.0, BODY_HEIGHT))),
-            Mesh2d(meshes.add(Triangle2d::new(
-                Vec2::new(0.0, -BODY_HEIGHT),
-                Vec2::new(-BODY_WIDTH/1.7, BODY_HEIGHT/2.0),
-                Vec2::new(BODY_WIDTH/1.7, BODY_HEIGHT/2.0),
-            ))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(0.0, 0.0, 0.0),
-            Body {
-                resting_position: Vec3::ZERO,
-                velocity: Vec2::ZERO,
-                active_limb: None,
-            },
+            Body::default(),
             Pickable::IGNORE,
             RigidBody::Dynamic,
             Velocity::zero(),
@@ -81,28 +107,29 @@ impl Body {
             // Collider::capsule(vec2(0.0, -BODY_HEIGHT/2.0), vec2(0.0, BODY_HEIGHT), BODY_WIDTH/2.0),
             ColliderMassProperties::Density(8.0)
         )).with_child((
-            // The pelvis lower part
-            Mesh2d(meshes.add(Circle::new(BODY_WIDTH/2.5))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
-            Transform::from_xyz(0.0, -BODY_HEIGHT, 0.0),
-        )).with_child((
-            // The pelvis higher part
-            Mesh2d(meshes.add(Circle::new(BODY_WIDTH/3.0))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
-            Transform::from_xyz(0.0, -BODY_HEIGHT/1.5, 0.0),
-        ))
-        .with_child((
             // The head
-            // Mesh2d(meshes.add(Circle::new(BODY_HEAD_HEIGHT))),
-            // Mesh2d(meshes.add(Ellipse::new(BODY_HEAD_HEIGHT/1.5, BODY_HEAD_HEIGHT))),
             Mesh2d(meshes.add(Capsule2d::new(BODY_HEAD_HEIGHT/1.5, BODY_HEAD_HEIGHT/1.8))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_BROWN))),
-            Transform::from_xyz(0.0, BODY_HEIGHT, 0.0),
+            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
+            Transform::from_xyz(0.0, BODY_HEIGHT*1.2, 0.0),
+        )).with_child((
+            ShapeBuilder::with(&body_shape)
+            .fill(COLOR_LIGHT_BLUE)
+            .build(),
         )).id();
 
         // Right arm
+        let arm_points = [
+            // Start with the top part and mirror it on y
+            Vec2::new(-ARM_LENGTH/4.0, ARM_WIDTH/1.),
+            Vec2::new(ARM_LENGTH/4.0, ARM_WIDTH/2.0),
+        ];
+        let arm_points = mirror_mesh_on_x_axis(&arm_points);
+        let arm_shape = shapes::Polygon {
+            points: arm_points.clone().into_iter().collect(),
+            closed: false,
+        };
         let shoulder = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
+            Mesh2d(meshes.add(Circle::new(BODY_HEAD_HEIGHT/2.0))),
             MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(BODY_WIDTH/2.0, BODY_HEIGHT/2.0, 0.0),
             Pickable::IGNORE,
@@ -114,8 +141,9 @@ impl Body {
                 angular_damping: 5.0,
             },
         )).with_child((
-            Mesh2d(meshes.add(Rectangle::new(ARM_LENGTH/2.0, 10.0))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
+            ShapeBuilder::with(&arm_shape)
+            .fill(COLOR_LIGHT_BLUE)
+            .build(),
             Transform::from_xyz(ARM_LENGTH/4.0, 0.0, 0.0),
         )).id();
         let shoulder_joint = RevoluteJointBuilder::new()
@@ -127,8 +155,18 @@ impl Body {
             .build();
         commands.entity(shoulder).insert(ImpulseJoint::new(body, shoulder_joint));
 
+        let forarm_points = [
+            // Start with the top part and mirror it on y
+            Vec2::new(-ARM_LENGTH/4.0, ARM_WIDTH/1.5),
+            Vec2::new(ARM_LENGTH/4.0, ARM_WIDTH/2.0),
+        ];
+        let forarm_points = mirror_mesh_on_x_axis(&forarm_points);
+        let forarm_shape = shapes::Polygon {
+            points: forarm_points.clone().into_iter().collect(),
+            closed: false,
+        };
         let elbow = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
+            Mesh2d(meshes.add(Circle::new(ARM_WIDTH/1.5))),
             MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(ARM_LENGTH/2.0, 0.0, 0.0),
             Pickable::IGNORE,
@@ -140,8 +178,9 @@ impl Body {
                 angular_damping: 5.0,
             },
         )).with_child((
-            Mesh2d(meshes.add(Rectangle::new(ARM_LENGTH/2.0, 10.0))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
+            ShapeBuilder::with(&forarm_shape)
+            .fill(COLOR_LIGHT_BLUE)
+            .build(),
             Transform::from_xyz(ARM_LENGTH/4.0, 0.0, 0.0),
         )).id();
         let elbow_joint = RevoluteJointBuilder::new()
@@ -176,8 +215,13 @@ impl Body {
 
 
         // Left arm
+        let arm_points = flip_on_y_axis(&arm_points);
+        let arm_shape = shapes::Polygon {
+            points: arm_points.into_iter().collect(),
+            closed: false,
+        };
         let shoulder = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
+            Mesh2d(meshes.add(Circle::new(BODY_HEAD_HEIGHT/2.0))),
             MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(-BODY_WIDTH/2.0, BODY_HEIGHT/2.0, 0.0),
             Pickable::IGNORE,
@@ -189,8 +233,9 @@ impl Body {
                 angular_damping: 5.0,
             },
         )).with_child((
-            Mesh2d(meshes.add(Rectangle::new(ARM_LENGTH/2.0, 10.0))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
+            ShapeBuilder::with(&arm_shape)
+            .fill(COLOR_LIGHT_BLUE)
+            .build(),
             Transform::from_xyz(-ARM_LENGTH/4.0, 0.0, 0.0),
         )).id();
         let shoulder_joint = RevoluteJointBuilder::new()
@@ -202,8 +247,13 @@ impl Body {
             .build();
         commands.entity(shoulder).insert(ImpulseJoint::new(body, shoulder_joint));
 
+        let forarm_points = flip_on_y_axis(&forarm_points);
+        let forarm_shape = shapes::Polygon {
+            points: forarm_points.into_iter().collect(),
+            closed: false,
+        };
         let elbow = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
+            Mesh2d(meshes.add(Circle::new(ARM_WIDTH/1.5))),
             MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(-ARM_LENGTH/2.0, 0.0, 0.0),
             Pickable::IGNORE,
@@ -215,8 +265,9 @@ impl Body {
                 angular_damping: 5.0,
             },
         )).with_child((
-            Mesh2d(meshes.add(Rectangle::new(ARM_LENGTH/2.0, 10.0))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
+            ShapeBuilder::with(&forarm_shape)
+            .fill(COLOR_LIGHT_BLUE)
+            .build(),
             Transform::from_xyz(-ARM_LENGTH/4.0, 0.0, 0.0),
         )).id();
         let elbow_joint = RevoluteJointBuilder::new()
@@ -249,9 +300,18 @@ impl Body {
             .build();
         commands.entity(hand).insert(ImpulseJoint::new(elbow, elbow_joint));
 
-
+        let leg_points = [
+            // Start with the top part and mirror it on y
+            Vec2::new(LEG_WIDTH, LEG_LENGTH/4.0),
+            Vec2::new(LEG_WIDTH/2.0, -LEG_LENGTH/4.0),
+        ];
+        let leg_points = mirror_mesh_on_y_axis(&leg_points);
+        let leg_shape = shapes::Polygon {
+            points: leg_points.clone().into_iter().collect(),
+            closed: false,
+        };
         let hip = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
+            Mesh2d(meshes.add(Circle::new(LEG_WIDTH))),
             MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(BODY_WIDTH/2.0, -BODY_HEIGHT/2.0, 0.0),
             Pickable::IGNORE,
@@ -263,22 +323,33 @@ impl Body {
                 angular_damping: 5.0,
             },
         )).with_child((
-            Mesh2d(meshes.add(Rectangle::new(LEG_LENGTH/2.0, 10.0))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
-            Transform::from_xyz(0.0, -LEG_LENGTH/4.0, 0.0).with_rotation(Quat::from_rotation_z(std::f32::consts::PI/2.0)),
+            ShapeBuilder::with(&leg_shape)
+            .fill(COLOR_LIGHT_BLUE)
+            .build(),
+            Transform::from_xyz(0.0, -LEG_LENGTH/4.0, 0.0),
         )).id();
 
         let hip_joint = RevoluteJointBuilder::new()
             // body anchor
-            .local_anchor1(Vec2::new(BODY_WIDTH_PHY/2.5, -BODY_HEIGHT_PHY))
+            .local_anchor1(Vec2::new(BODY_WIDTH_PHY/5.0, -BODY_HEIGHT_PHY))
             // hip anchor
             .local_anchor2(Vec2::ZERO)
             // .limits([0.0, 180.0_f32.to_radians()])
             .build();
         commands.entity(hip).insert(ImpulseJoint::new(body, hip_joint));
 
+        let lowerleg_points = [
+            // Start with the top part and mirror it on y
+            Vec2::new(LEG_WIDTH/2.0, LEG_LENGTH/4.0),
+            Vec2::new(LEG_WIDTH/3.0, -LEG_LENGTH/4.0),
+        ];
+        let lowerleg_points = mirror_mesh_on_y_axis(&lowerleg_points);
+        let lowerleg_shape = shapes::Polygon {
+            points: lowerleg_points.clone().into_iter().collect(),
+            closed: false,
+        };
         let knee = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
+            Mesh2d(meshes.add(Circle::new(LEG_WIDTH/1.8))),
             MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT + LEG_LENGTH/2.0, 0.0),
             Pickable::IGNORE,
@@ -290,9 +361,10 @@ impl Body {
                 angular_damping: 5.0,
             },
         )).with_child((
-            Mesh2d(meshes.add(Rectangle::new(LEG_LENGTH/2.0, 10.0))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
-            Transform::from_xyz(0.0, -LEG_LENGTH/4.0, 0.0).with_rotation(Quat::from_rotation_z(std::f32::consts::PI/2.0)),
+            ShapeBuilder::with(&lowerleg_shape)
+            .fill(COLOR_LIGHT_BLUE)
+            .build(),
+            Transform::from_xyz(0.0, -ARM_LENGTH/4.0, 0.0),
         )).id();
         let knee_joint = RevoluteJointBuilder::new()
             // knee anchor
@@ -304,9 +376,6 @@ impl Body {
         commands.entity(knee).insert(ImpulseJoint::new(hip, knee_joint));
 
         let foot = commands.spawn((
-            // Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
-            // MeshMaterial2d(materials.add(Color::from(BLUE_200))),
-            // Mesh2d(meshes.add(Rectangle::new(20.0, 10.0))),
             Mesh2d(meshes.add(Triangle2d::new(
                 Vec2::new(0.0, 12.0),
                 Vec2::new(12.0, -5.0),
@@ -331,13 +400,16 @@ impl Body {
             .local_anchor1(Vec2::new(0.0, -LEG_LENGTH/2.0))
             // foot anchor
             .local_anchor2(Vec2::ZERO)
-            // .limits([0.0, 180.0_f32.to_radians()])
             .build();
         commands.entity(foot).insert(ImpulseJoint::new(knee, foot_joint));
 
         // Left leg
+        let leg_shape = shapes::Polygon {
+            points: leg_points.clone().into_iter().collect(),
+            closed: false,
+        };
         let hip = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
+            Mesh2d(meshes.add(Circle::new(LEG_WIDTH))),
             MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT/2.0, 0.0),
             Pickable::IGNORE,
@@ -349,21 +421,21 @@ impl Body {
                 angular_damping: 5.0,
             },
         )).with_child((
-            Mesh2d(meshes.add(Rectangle::new(LEG_LENGTH/2.0, 10.0))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
-            Transform::from_xyz(0.0, -LEG_LENGTH/4.0, 0.0).with_rotation(Quat::from_rotation_z(std::f32::consts::PI/2.0)),
+            ShapeBuilder::with(&leg_shape)
+            .fill(COLOR_LIGHT_BLUE)
+            .build(),
+            Transform::from_xyz(0.0, -LEG_LENGTH/4.0, 0.0),
         )).id();
         let hip_joint = RevoluteJointBuilder::new()
             // body anchor
-            .local_anchor1(Vec2::new(-BODY_WIDTH_PHY/2.5, -BODY_HEIGHT_PHY))
+            .local_anchor1(Vec2::new(-BODY_WIDTH_PHY/5., -BODY_HEIGHT_PHY))
             // hip anchor
             .local_anchor2(Vec2::ZERO)
-            // .limits([0.0, 180.0_f32.to_radians()])
             .build();
         commands.entity(hip).insert(ImpulseJoint::new(body, hip_joint));
 
         let knee = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
+            Mesh2d(meshes.add(Circle::new(LEG_WIDTH/1.8))),
             MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT + LEG_LENGTH/2.0, 0.0),
             Pickable::IGNORE,
@@ -375,23 +447,20 @@ impl Body {
                 angular_damping: 5.0,
             },
         )).with_child((
-            Mesh2d(meshes.add(Rectangle::new(LEG_LENGTH/2.0, 10.0))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
-            Transform::from_xyz(0.0, -LEG_LENGTH/4.0, 0.0).with_rotation(Quat::from_rotation_z(std::f32::consts::PI/2.0)),
+            ShapeBuilder::with(&lowerleg_shape)
+            .fill(COLOR_LIGHT_BLUE)
+            .build(),
+            Transform::from_xyz(0.0, -ARM_LENGTH/4.0, 0.0),
         )).id();
         let knee_joint = RevoluteJointBuilder::new()
             // knee anchor
             .local_anchor1(Vec2::new(0.0, -LEG_LENGTH/2.0))
             // knee anchor
             .local_anchor2(Vec2::ZERO)
-            // .limits([0.0, 180.0_f32.to_radians()])
             .build();
         commands.entity(knee).insert(ImpulseJoint::new(hip, knee_joint));
 
         let foot = commands.spawn((
-            // Mesh2d(meshes.add(Circle::new(JOINT_SIZE))),
-            // MeshMaterial2d(materials.add(Color::from(RED_200))),
-            // Mesh2d(meshes.add(Rectangle::new(20.0, 10.0))),
             Mesh2d(meshes.add(Triangle2d::new(
                 Vec2::new(0.0, 12.0),
                 Vec2::new(12.0, -5.0),
