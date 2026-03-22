@@ -128,7 +128,7 @@ fn body_control(
 ) {
     let mut body = q_body.single_mut().unwrap();
 
-    let body_target_position = body.2.resting_position + Vec3::Y * BODY_HEAD_HEIGHT * 2.0;
+    let body_target_position = body.2.resting_position + Vec3::Y * HEAD_HEIGHT * 2.0;
     gizmos.circle_2d(body_target_position.truncate(), 8.0, YELLOW_200);
 
     let body_can_move = body.2.active_limb.is_none();
@@ -248,10 +248,10 @@ fn update_hand_position(
     let mut distance_limiters = Vec::new();
 
     // Compute the max distance from body
-    let shoulder_approximated_position = body_transform.translation + Vec3::Y * BODY_HEAD_HEIGHT;
+    let shoulder_approximated_position = body_transform.translation + Vec3::Y * HEAD_HEIGHT;
     let shoulder_pointer_distance = shoulder_approximated_position.distance(mouse_position.extend(0.0));
     // allow a small overreach to improve the playability
-    let arm_reachable_distance = BODY_HEAD_HEIGHT * 5.0;
+    let arm_reachable_distance = HEAD_HEIGHT * 4.0;
     let ray = Ray2d {
         origin: shoulder_approximated_position.truncate(),
         direction: Dir2::new_unchecked((mouse_position - shoulder_approximated_position.truncate()).normalize()),
@@ -262,7 +262,7 @@ fn update_hand_position(
     gizmos.circle_2d(shoulder_approximated_position.truncate(), arm_reachable_distance, YELLOW_100);
 
     // Compute the max distance from foot
-    let max_foot_hand_distance = BODY_HEAD_HEIGHT * 11.0;
+    let max_foot_hand_distance = HEAD_HEIGHT * 9.0;
     let ray = Ray2d {
         origin: body.left_leg.end.translation.truncate(),
         direction: Dir2::new_unchecked((mouse_position - body.left_leg.end.translation.truncate()).normalize()),

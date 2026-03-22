@@ -8,6 +8,7 @@ use bevy::{
     color::palettes::tailwind::*,
 };
 use bevy_rapier2d::prelude::*;
+use bevy_embedded_assets::EmbeddedAssetPlugin;
 use rand::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
@@ -37,6 +38,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(MeshPickingPlugin)
+        .add_plugins((EmbeddedAssetPlugin::default()))
         // .add_plugins(PhysicsPlugin)
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_plugins(RapierDebugRenderPlugin::default())
@@ -71,6 +73,7 @@ fn setup_system(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut config_store: ResMut<GizmoConfigStore>,
+    asset_server: Res<AssetServer>,
 ) {
     // Spawn a 2D camera
     commands.spawn((Camera2d, MainCamera));
@@ -80,7 +83,7 @@ fn setup_system(
     config.enabled = false;
 
     // Spawn the body
-    Body::spawn(&mut commands, &mut meshes, &mut materials);
+    Body::spawn(&mut commands, &mut meshes, &mut materials, asset_server);
 
     // Spawn a box collider as ground
     commands.spawn((

@@ -16,13 +16,15 @@ use crate::mesh_drawing::*;
 // use crate::physics::RigidBody;
 
 // An adult body is composed of 8 head heights
-pub static BODY_HEAD_HEIGHT: f32 = 20.0;
-pub static BODY_WIDTH: f32 = BODY_HEAD_HEIGHT * 2.2;
-pub static BODY_HEIGHT: f32 = BODY_HEAD_HEIGHT * 1.8;
-pub static ARM_LENGTH: f32 = BODY_HEAD_HEIGHT * 3.0;
-pub static ARM_WIDTH: f32 = BODY_HEAD_HEIGHT / 2.0;
-pub static LEG_LENGTH: f32 = BODY_HEAD_HEIGHT * 4.0;
-pub static LEG_WIDTH: f32 = BODY_HEAD_HEIGHT / 1.5;
+pub static HEAD_HEIGHT: f32 = 40.0;
+pub static BODY_WIDTH: f32 = HEAD_HEIGHT * 1.6;
+pub static BODY_HEIGHT: f32 = HEAD_HEIGHT * 2.5;
+pub static ARM_LENGTH: f32 = HEAD_HEIGHT * 2.75;
+pub static ARM_WIDTH: f32 = ARM_LENGTH / 4.0;
+pub static HAND_HEIGHT: f32 = HEAD_HEIGHT / 1.25;
+pub static HAND_WIDTH: f32 = HAND_HEIGHT / 2.0;
+pub static LEG_LENGTH: f32 = HEAD_HEIGHT * 4.0;
+pub static LEG_WIDTH: f32 = HEAD_HEIGHT / 1.25;
 pub static JOINT_SIZE: f32 = 5.0;
 
 static PHY_TO_PIX: f32 = 1.0;
@@ -71,29 +73,17 @@ impl Body {
         mut commands: &mut Commands,
         mut meshes: &mut ResMut<Assets<Mesh>>,
         mut materials: &mut ResMut<Assets<ColorMaterial>>,
+        asset_server: Res<AssetServer>,
     ) {
 
-        // Body shape
-        let body_points = [
-            // Start with the right side
-            // higher neck
-            Vec2::new(BODY_HEAD_HEIGHT/3.0, BODY_HEIGHT/1.),
-            // lower neck
-            Vec2::new(BODY_HEAD_HEIGHT/2.8, BODY_HEIGHT/1.4),
-            // Shoulders
-            Vec2::new(BODY_WIDTH/1.7, BODY_HEIGHT/2.0),
-            // pelvis higher part
-            Vec2::new(0.0 + BODY_WIDTH/3.0, -BODY_HEIGHT/1.5),
-            // pelvis lower part
-            Vec2::new(0.0 + BODY_WIDTH/2.5, -BODY_HEIGHT),
-            // pelvis bottom
-            Vec2::new(BODY_HEAD_HEIGHT/4.0, -BODY_HEIGHT - BODY_WIDTH/3.0),
-        ];
-        let body_points = mirror_mesh_on_y_axis(&body_points);
-        let body_shape = shapes::Polygon {
-            points: body_points.into_iter().collect(),
-            closed: false,
-        };
+        let body_handle = asset_server.load("torso.png");
+        let head_handle = asset_server.load("head.png");
+        let forarm_handle = asset_server.load("forarm.png");
+        let arm_handle = asset_server.load("arm.png");
+        let hand_handle = asset_server.load("hand.png");
+        let thigh_handle = asset_server.load("thigh.png");
+        let calf_handle = asset_server.load("calf.png");
+        let foot_handle = asset_server.load("foot.png");
 
         let body = commands.spawn((
             Transform::from_xyz(0.0, 0.0, 0.0),
@@ -108,29 +98,23 @@ impl Body {
             ColliderMassProperties::Density(8.0)
         )).with_child((
             // The head
-            Mesh2d(meshes.add(Capsule2d::new(BODY_HEAD_HEIGHT/1.5, BODY_HEAD_HEIGHT/1.8))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
-            Transform::from_xyz(0.0, BODY_HEIGHT*1.2, 0.0),
+            Sprite {
+                image: head_handle,
+                custom_size: Some(Vec2::new(HEAD_HEIGHT*0.8, HEAD_HEIGHT)),
+                ..Default::default()
+            },
+            Transform::from_xyz(0.0, HEAD_HEIGHT*1.6, 1.0),
         )).with_child((
-            ShapeBuilder::with(&body_shape)
-            .fill(COLOR_LIGHT_BLUE)
-            .build(),
+            Sprite {
+                image: body_handle,
+                custom_size: Some(Vec2::new(BODY_WIDTH, BODY_HEIGHT)),
+                ..Default::default()
+            },
+            Transform::from_xyz(0.0, 0.0, 1.0),
         )).id();
 
         // Right arm
-        let arm_points = [
-            // Start with the top part and mirror it on y
-            Vec2::new(-ARM_LENGTH/4.0, ARM_WIDTH/1.),
-            Vec2::new(ARM_LENGTH/4.0, ARM_WIDTH/2.0),
-        ];
-        let arm_points = mirror_mesh_on_x_axis(&arm_points);
-        let arm_shape = shapes::Polygon {
-            points: arm_points.clone().into_iter().collect(),
-            closed: false,
-        };
         let shoulder = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(BODY_HEAD_HEIGHT/2.0))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(BODY_WIDTH/2.0, BODY_HEIGHT/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -141,14 +125,16 @@ impl Body {
                 angular_damping: 5.0,
             },
         )).with_child((
-            ShapeBuilder::with(&arm_shape)
-            .fill(COLOR_LIGHT_BLUE)
-            .build(),
-            Transform::from_xyz(ARM_LENGTH/4.0, 0.0, 0.0),
+            Sprite {
+                image: arm_handle.clone(),
+                custom_size: Some(Vec2::new(ARM_LENGTH/1.4, ARM_WIDTH)),
+                ..Default::default()
+            },
+            Transform::from_rotation(Quat::from_rotation_y(180_f32.to_radians())).with_translation(Vec3::new(ARM_LENGTH/4.0, 0.0, 1.0)),
         )).id();
         let shoulder_joint = RevoluteJointBuilder::new()
             // body anchor
-            .local_anchor1(Vec2::new(BODY_WIDTH/2.0, BODY_HEIGHT/2.0))
+            .local_anchor1(Vec2::new(BODY_WIDTH/4.0, BODY_HEIGHT/2.8))
             // shoulder anchor
             .local_anchor2(Vec2::ZERO)
             // .limits([0.0, 180.0_f32.to_radians()])
@@ -166,8 +152,6 @@ impl Body {
             closed: false,
         };
         let elbow = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(ARM_WIDTH/1.5))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(ARM_LENGTH/2.0, 0.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -178,10 +162,12 @@ impl Body {
                 angular_damping: 5.0,
             },
         )).with_child((
-            ShapeBuilder::with(&forarm_shape)
-            .fill(COLOR_LIGHT_BLUE)
-            .build(),
-            Transform::from_xyz(ARM_LENGTH/4.0, 0.0, 0.0),
+            Sprite {
+                image: forarm_handle.clone(),
+                custom_size: Some(Vec2::new(ARM_LENGTH/2.0, ARM_WIDTH)),
+                ..Default::default()
+            },
+            Transform::from_rotation(Quat::from_rotation_y(180_f32.to_radians())).with_translation(Vec3::new(ARM_LENGTH/4.0, 0.0, 2.0)),
         )).id();
         let elbow_joint = RevoluteJointBuilder::new()
             // elbow anchor
@@ -193,9 +179,12 @@ impl Body {
         commands.entity(elbow).insert(ImpulseJoint::new(shoulder, elbow_joint));
 
         let hand = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(HAND_SIZE))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_BLUE))),
-            Transform::from_xyz(ARM_LENGTH, 0.0, 0.0),
+            Sprite {
+                image: hand_handle.clone(),
+                custom_size: Some(Vec2::new(HAND_HEIGHT, HAND_WIDTH)),
+                ..Default::default()
+            },
+            Transform::from_xyz(ARM_LENGTH, 0.0, 3.0),
             RightHand {
                 is_holding: true,
             },
@@ -215,14 +204,7 @@ impl Body {
 
 
         // Left arm
-        let arm_points = flip_on_y_axis(&arm_points);
-        let arm_shape = shapes::Polygon {
-            points: arm_points.into_iter().collect(),
-            closed: false,
-        };
         let shoulder = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(BODY_HEAD_HEIGHT/2.0))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(-BODY_WIDTH/2.0, BODY_HEIGHT/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -233,28 +215,23 @@ impl Body {
                 angular_damping: 5.0,
             },
         )).with_child((
-            ShapeBuilder::with(&arm_shape)
-            .fill(COLOR_LIGHT_BLUE)
-            .build(),
-            Transform::from_xyz(-ARM_LENGTH/4.0, 0.0, 0.0),
+            Sprite {
+                image: arm_handle,
+                custom_size: Some(Vec2::new(ARM_LENGTH/1.4, ARM_WIDTH)),
+                ..Default::default()
+            },
+            Transform::from_rotation(Quat::from_rotation_z(0_f32.to_radians())).with_translation(Vec3::new(-ARM_LENGTH/4., 0.0, 1.0)),
         )).id();
         let shoulder_joint = RevoluteJointBuilder::new()
             // body anchor
-            .local_anchor1(Vec2::new(-BODY_WIDTH/2.0, BODY_HEIGHT/2.0))
+            .local_anchor1(Vec2::new(-BODY_WIDTH/4.0, BODY_HEIGHT/3.0))
             // shoulder anchor
             .local_anchor2(Vec2::ZERO)
             // .limits([0.0, 180.0_f32.to_radians()])
             .build();
         commands.entity(shoulder).insert(ImpulseJoint::new(body, shoulder_joint));
 
-        let forarm_points = flip_on_y_axis(&forarm_points);
-        let forarm_shape = shapes::Polygon {
-            points: forarm_points.into_iter().collect(),
-            closed: false,
-        };
         let elbow = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(ARM_WIDTH/1.5))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(-ARM_LENGTH/2.0, 0.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -265,10 +242,12 @@ impl Body {
                 angular_damping: 5.0,
             },
         )).with_child((
-            ShapeBuilder::with(&forarm_shape)
-            .fill(COLOR_LIGHT_BLUE)
-            .build(),
-            Transform::from_xyz(-ARM_LENGTH/4.0, 0.0, 0.0),
+            Sprite {
+                image: forarm_handle,
+                custom_size: Some(Vec2::new(ARM_LENGTH/2.0, ARM_WIDTH)),
+                ..Default::default()
+            },
+            Transform::from_rotation(Quat::from_rotation_z(0_f32.to_radians())).with_translation(Vec3::new(-ARM_LENGTH/4.0, 0.0, 2.0)),
         )).id();
         let elbow_joint = RevoluteJointBuilder::new()
             // shoulder anchor
@@ -280,9 +259,12 @@ impl Body {
         commands.entity(elbow).insert(ImpulseJoint::new(shoulder, elbow_joint));
 
         let hand = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(HAND_SIZE))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_RED))),
-            Transform::from_xyz(-ARM_LENGTH, 0.0, 0.0),
+            Sprite {
+                image: hand_handle.clone(),
+                custom_size: Some(Vec2::new(HAND_HEIGHT, HAND_WIDTH)),
+                ..Default::default()
+            },
+            Transform::from_xyz(-ARM_LENGTH, 0.0, 3.0),
             LeftHand {
                 is_holding: true,
             },
@@ -300,19 +282,7 @@ impl Body {
             .build();
         commands.entity(hand).insert(ImpulseJoint::new(elbow, elbow_joint));
 
-        let leg_points = [
-            // Start with the top part and mirror it on y
-            Vec2::new(LEG_WIDTH, LEG_LENGTH/4.0),
-            Vec2::new(LEG_WIDTH/2.0, -LEG_LENGTH/4.0),
-        ];
-        let leg_points = mirror_mesh_on_y_axis(&leg_points);
-        let leg_shape = shapes::Polygon {
-            points: leg_points.clone().into_iter().collect(),
-            closed: false,
-        };
         let hip = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(LEG_WIDTH))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(BODY_WIDTH/2.0, -BODY_HEIGHT/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -323,34 +293,24 @@ impl Body {
                 angular_damping: 5.0,
             },
         )).with_child((
-            ShapeBuilder::with(&leg_shape)
-            .fill(COLOR_LIGHT_BLUE)
-            .build(),
-            Transform::from_xyz(0.0, -LEG_LENGTH/4.0, 0.0),
+            Sprite {
+                image: calf_handle.clone(),
+                custom_size: Some(Vec2::new(LEG_WIDTH, LEG_LENGTH/1.8)),
+                ..Default::default()
+            },
+            Transform::from_rotation(Quat::from_rotation_y(180_f32.to_radians())).with_translation(Vec3::new(0., -LEG_LENGTH/4.0, 0.0)),
         )).id();
 
         let hip_joint = RevoluteJointBuilder::new()
             // body anchor
-            .local_anchor1(Vec2::new(BODY_WIDTH_PHY/5.0, -BODY_HEIGHT_PHY))
+            .local_anchor1(Vec2::new(BODY_WIDTH_PHY/5.0, -BODY_HEIGHT_PHY/2.8))
             // hip anchor
             .local_anchor2(Vec2::ZERO)
             // .limits([0.0, 180.0_f32.to_radians()])
             .build();
         commands.entity(hip).insert(ImpulseJoint::new(body, hip_joint));
 
-        let lowerleg_points = [
-            // Start with the top part and mirror it on y
-            Vec2::new(LEG_WIDTH/2.0, LEG_LENGTH/4.0),
-            Vec2::new(LEG_WIDTH/3.0, -LEG_LENGTH/4.0),
-        ];
-        let lowerleg_points = mirror_mesh_on_y_axis(&lowerleg_points);
-        let lowerleg_shape = shapes::Polygon {
-            points: lowerleg_points.clone().into_iter().collect(),
-            closed: false,
-        };
         let knee = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(LEG_WIDTH/1.8))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT + LEG_LENGTH/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -361,10 +321,12 @@ impl Body {
                 angular_damping: 5.0,
             },
         )).with_child((
-            ShapeBuilder::with(&lowerleg_shape)
-            .fill(COLOR_LIGHT_BLUE)
-            .build(),
-            Transform::from_xyz(0.0, -ARM_LENGTH/4.0, 0.0),
+            Sprite {
+                image: thigh_handle.clone(),
+                custom_size: Some(Vec2::new(LEG_WIDTH, LEG_LENGTH/2.0)),
+                ..Default::default()
+            },
+            Transform::from_rotation(Quat::from_rotation_y(180_f32.to_radians())).with_translation(Vec3::new(0., -LEG_LENGTH/4.2, 0.0)),
         )).id();
         let knee_joint = RevoluteJointBuilder::new()
             // knee anchor
@@ -376,11 +338,6 @@ impl Body {
         commands.entity(knee).insert(ImpulseJoint::new(hip, knee_joint));
 
         let foot = commands.spawn((
-            Mesh2d(meshes.add(Triangle2d::new(
-                Vec2::new(0.0, 12.0),
-                Vec2::new(12.0, -5.0),
-                Vec2::new(-12.0, -5.0)))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(BODY_WIDTH/2.0, -BODY_HEIGHT - LEG_LENGTH, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -394,6 +351,14 @@ impl Body {
             RightFoot {
                 is_moving: false,
             },
+        )).with_child((
+            Sprite {
+                image: foot_handle.clone(),
+                custom_size: Some(Vec2::new(HAND_HEIGHT*1.25, HAND_WIDTH*1.25)),
+                ..Default::default()
+            },
+            Transform::from_rotation(Quat::from_rotation_y(180_f32.to_radians())),
+
         )).id();
         let foot_joint = RevoluteJointBuilder::new()
             // foot anchor
@@ -404,13 +369,7 @@ impl Body {
         commands.entity(foot).insert(ImpulseJoint::new(knee, foot_joint));
 
         // Left leg
-        let leg_shape = shapes::Polygon {
-            points: leg_points.clone().into_iter().collect(),
-            closed: false,
-        };
         let hip = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(LEG_WIDTH))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -421,22 +380,22 @@ impl Body {
                 angular_damping: 5.0,
             },
         )).with_child((
-            ShapeBuilder::with(&leg_shape)
-            .fill(COLOR_LIGHT_BLUE)
-            .build(),
-            Transform::from_xyz(0.0, -LEG_LENGTH/4.0, 0.0),
+            Sprite {
+                image: calf_handle,
+                custom_size: Some(Vec2::new(LEG_WIDTH, LEG_LENGTH/1.8)),
+                ..Default::default()
+            },
+            Transform::from_rotation(Quat::from_rotation_z(0_f32.to_radians())).with_translation(Vec3::new(0., -LEG_LENGTH/4.2, 0.0)),
         )).id();
         let hip_joint = RevoluteJointBuilder::new()
             // body anchor
-            .local_anchor1(Vec2::new(-BODY_WIDTH_PHY/5., -BODY_HEIGHT_PHY))
+            .local_anchor1(Vec2::new(-BODY_WIDTH_PHY/5., -BODY_HEIGHT_PHY/2.8))
             // hip anchor
             .local_anchor2(Vec2::ZERO)
             .build();
         commands.entity(hip).insert(ImpulseJoint::new(body, hip_joint));
 
         let knee = commands.spawn((
-            Mesh2d(meshes.add(Circle::new(LEG_WIDTH/1.8))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT + LEG_LENGTH/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -447,10 +406,12 @@ impl Body {
                 angular_damping: 5.0,
             },
         )).with_child((
-            ShapeBuilder::with(&lowerleg_shape)
-            .fill(COLOR_LIGHT_BLUE)
-            .build(),
-            Transform::from_xyz(0.0, -ARM_LENGTH/4.0, 0.0),
+            Sprite {
+                image: thigh_handle,
+                custom_size: Some(Vec2::new(LEG_WIDTH, LEG_LENGTH/2.0)),
+                ..Default::default()
+            },
+            Transform::from_rotation(Quat::from_rotation_y(0_f32.to_radians())).with_translation(Vec3::new(0., -LEG_LENGTH/4.0, 0.0)),
         )).id();
         let knee_joint = RevoluteJointBuilder::new()
             // knee anchor
@@ -461,11 +422,6 @@ impl Body {
         commands.entity(knee).insert(ImpulseJoint::new(hip, knee_joint));
 
         let foot = commands.spawn((
-            Mesh2d(meshes.add(Triangle2d::new(
-                Vec2::new(0.0, 12.0),
-                Vec2::new(12.0, -5.0),
-                Vec2::new(-12.0, -5.0)))),
-            MeshMaterial2d(materials.add(Color::from(COLOR_LIGHT_BLUE))),
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT - LEG_LENGTH, 0.0),
             Pickable::IGNORE,
             // RigidBody::Dynamic,
@@ -478,6 +434,12 @@ impl Body {
             },
             LeftFoot{
                 is_moving: false,
+            },
+        )).with_child((
+            Sprite {
+                image: foot_handle.clone(),
+                custom_size: Some(Vec2::new(HAND_HEIGHT*1.25, HAND_WIDTH*1.25)),
+                ..Default::default()
             },
         )).id();
         let foot_joint = RevoluteJointBuilder::new()

@@ -14,15 +14,16 @@ pub struct LeftForarmSkin;
 
 pub fn setup_body_skin(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    asset_server: Res<AssetServer>,
+    // mut meshes: ResMut<Assets<Mesh>>,
+    // mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     // spawn the hands
-    commands.spawn((
-        Mesh2d(meshes.add(Rectangle::new(10.0, ARM_LENGTH))),
-        MeshMaterial2d(materials.add(Color::from(GRAY_300))),
-        LeftForarmSkin,
-    ));
+    // commands.spawn((
+    //     Mesh2d(meshes.add(Rectangle::new(10.0, ARM_LENGTH))),
+    //     MeshMaterial2d(materials.add(Color::from(GRAY_300))),
+    //     LeftForarmSkin,
+    // ));
 }
 
 pub fn draw_body(
