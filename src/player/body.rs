@@ -354,7 +354,7 @@ impl Body {
         )).with_child((
             Sprite {
                 image: foot_handle.clone(),
-                custom_size: Some(Vec2::new(HAND_HEIGHT*1.25, HAND_WIDTH*1.25)),
+                custom_size: Some(Vec2::new(HAND_HEIGHT*1.5, HAND_WIDTH*1.5)),
                 ..Default::default()
             },
             Transform::from_rotation(Quat::from_rotation_y(180_f32.to_radians())),
@@ -438,13 +438,13 @@ impl Body {
         )).with_child((
             Sprite {
                 image: foot_handle.clone(),
-                custom_size: Some(Vec2::new(HAND_HEIGHT*1.25, HAND_WIDTH*1.25)),
+                custom_size: Some(Vec2::new(HAND_HEIGHT*1.5, HAND_WIDTH*1.5)),
                 ..Default::default()
             },
         )).id();
         let foot_joint = RevoluteJointBuilder::new()
             // foot anchor
-            .local_anchor1(Vec2::new(0.0, -LEG_LENGTH/2.0))
+            .local_anchor1(Vec2::new(0.0, -LEG_LENGTH/1.8))
             // foot anchor
             .local_anchor2(Vec2::new(0.0, 0.0))
             // .limits([0.0, 180.0_f32.to_radians()])

@@ -20,6 +20,7 @@ impl Plugin for WallPlugin {
         app.add_systems(Startup, setup_wall);
         app.add_systems(Update, update_wall);
         app.add_systems(Update, route::two_hands_on_last_holds);
+        app.add_systems(Update, find_foot_closest_hold);
     }
 }
 

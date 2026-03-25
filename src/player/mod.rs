@@ -10,7 +10,7 @@ use bevy::{
 use bevy_rapier2d::prelude::*;
 
 use crate::mouse::MousePosition;
-use crate::wall::holds::{LeftHandOnHold, RightHandOnHold};
+use crate::wall::holds::{LeftHandOnHold, RightHandOnHold, LeftFootClosestHold, RightFootClosestHold};
 
 pub mod body;
 pub mod hand;
@@ -41,6 +41,8 @@ fn feet_control(
     mut q_right_foot: Query<(&mut Transform, &mut Velocity, Entity, &mut RightFoot), (Without<Body>, Without<LeftFoot>)>,
     r_right_hand: Query<(&Transform, &RightHand), (Without<Body>, Without<LeftFoot>, Without<RightFoot>)>,
     r_left_hand: Query<(&Transform, &LeftHand), (Without<Body>, Without<LeftFoot>, Without<RightFoot>,Without<RightHand>)>,
+    left_target: Res<LeftFootClosestHold>,
+    right_target: Res<RightFootClosestHold>,
     mut gizmos: Gizmos,
 ) {
     // Predict the feet position based on the body position.
@@ -50,7 +52,7 @@ fn feet_control(
     let left_hand = r_left_hand.single().unwrap();
     let right_hand = r_right_hand.single().unwrap();
 
-    let distance_threshold = 25.0;
+    let distance_threshold = 8.0;
     let foot_offset = 0.0;
     // let foot_offset = if keys.pressed(KeyCode::Space) {
     //     LEG_LENGTH/3.0
@@ -65,18 +67,21 @@ fn feet_control(
     // Find best foot position
     // let body_to_hand_distance = body.0.translation.distance(left_hand.0.translation);
     let body_to_hand_distance = (body.0.translation.x - left_hand.0.translation.x).abs();
-    let left_foot_target = body.0.translation + Vec3::new(-BODY_WIDTH/3.0-body_to_hand_distance/2.0, -BODY_HEIGHT/2.0 - LEG_LENGTH/2.2 + foot_offset, 0.0);
+    // let left_foot_target = body.0.translation + Vec3::new(-BODY_WIDTH/3.0-body_to_hand_distance/2.0, -BODY_HEIGHT/2.0 - LEG_LENGTH/2.2 + foot_offset, 0.0);
+    let left_foot_target = left_target.0.extend(0.0);
     gizmos.circle_2d(left_foot_target.truncate(), 4.0, RED_200);
     // Right foot
     // let body_to_hand_distance = body.0.translation.distance(right_hand.0.translation);
     let body_to_hand_distance = (body.0.translation.x - right_hand.0.translation.x).abs();
-    let right_foot_target = body.0.translation + Vec3::new(BODY_WIDTH/3.0 + body_to_hand_distance/2.0, -BODY_HEIGHT/2.0 - LEG_LENGTH/2.2 + foot_offset, 0.0);
+    // let right_foot_target = body.0.translation + Vec3::new(BODY_WIDTH/3.0 + body_to_hand_distance/2.0, -BODY_HEIGHT/2.0 - LEG_LENGTH/2.2 + foot_offset, 0.0);
+    let right_foot_target = right_target.0.extend(0.0);
     gizmos.circle_2d(right_foot_target.truncate(), 4.0, BLUE_200);
 
     // Left foot
     let distance_to_target = left_foot.0.translation.distance(left_foot_target);
     let foot_is_moving = body.1.active_limb == Some(LimbType::LeftFoot);
 
+    println!("distance to target {}", distance_to_target);
     // if !left_foot.3.is_moving && distance_to_target > distance_threshold && feet_can_move{
     if !foot_is_moving && feet_can_move && distance_to_target > distance_threshold {
             left_foot.3.is_moving = true;

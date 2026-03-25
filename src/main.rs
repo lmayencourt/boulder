@@ -50,6 +50,8 @@ fn main() {
         .init_state::<GameState>()
         .insert_resource(wall::holds::LeftHandOnHold(false))
         .insert_resource(wall::holds::RightHandOnHold(false))
+        .insert_resource(wall::holds::LeftFootClosestHold(Vec2::default()))
+        .insert_resource(wall::holds::RightFootClosestHold(Vec2::default()))
         .add_systems(Startup, setup_system)
         .add_systems(Update, camera::follow_player)
         // .add_systems(Startup, setup_chain)
