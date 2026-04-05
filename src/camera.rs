@@ -6,6 +6,7 @@ use bevy::{
     prelude::*,
     color::palettes::tailwind::*,
     math::bounding::{Aabb2d, BoundingCircle, BoundingVolume, IntersectsVolume},
+    input::mouse::AccumulatedMouseScroll,
 };
 
 use crate::mouse::MousePosition;
@@ -29,13 +30,45 @@ pub fn follow_player(
     mut q_camera: Query<(&mut Transform, &mut SmoothFollower), With<MainCamera>>,
     q_body: Query<(&Transform, &Body), (Without<MainCamera>)>,
     mouse_position: Res<MousePosition>,
+    keys: Res<ButtonInput<KeyCode>>,
     mut gizmos: Gizmos,
 ) {
     let (body_transform, body) = q_body.single().unwrap();
     let (mut camera_transform, mut smooth_camera) = q_camera.single_mut().unwrap();
 
+    let initial_camera_z = camera_transform.translation.z;
     if body.active_limb.is_none() || !body.active_limb.as_ref().is_some_and(|x| x.is_hand()) {
         smooth_camera.follow_target(&body_transform.translation, &mut camera_transform.translation, gizmos);
+    }
+    camera_transform.translation.z = initial_camera_z;
+
+    if keys.just_pressed(KeyCode::Digit2) {
+        camera_transform.translation.z = initial_camera_z + 50.0;
+        info!("Camera zoom: {}", camera_transform.translation.z);
+    }
+    if keys.just_pressed(KeyCode::Digit3) {
+        camera_transform.translation.z = initial_camera_z - 50.0;
+        info!("Camera zoom: {}", camera_transform.translation.z);
+    }
+}
+
+pub fn zoom(
+    camera: Single<&mut Projection, With<Camera>>,
+    mouse_wheel_input: Res<AccumulatedMouseScroll>,
+) {
+    if let Projection::Orthographic(ref mut orthographic) = *camera.into_inner() {
+        // We want scrolling up to zoom in, decreasing the scale, so we negate the delta.
+        let delta_zoom = -mouse_wheel_input.delta.y * 0.05;
+        // When changing scales, logarithmic changes are more intuitive.
+        // To get this effect, we add 1 to the delta, so that a delta of 0
+        // results in no multiplicative effect, positive values result in a multiplicative increase,
+        // and negative values result in multiplicative decreases.
+        let multiplicative_zoom = 1. + delta_zoom;
+
+        orthographic.scale = (orthographic.scale * multiplicative_zoom).clamp(
+            0.0,
+            10.0,
+        );
     }
 }
 
@@ -71,7 +104,7 @@ impl SmoothFollower {
             let value = easing.sample(*lerp_value).unwrap();
             let easing_dir = (target_pos - start_pos);
             current_pos = start_pos + easing_dir * value;
-            
+
             if *lerp_value < 0.98 {
                 *lerp_value += 0.01;
                 println!("lerp {}", *lerp_value);

@@ -55,6 +55,7 @@ fn main() {
         .insert_resource(wall::holds::RightFootClosestHold(Vec2::default()))
         .add_systems(Startup, setup_system)
         .add_systems(Update, camera::follow_player)
+        .add_systems(Update, camera::zoom)
         // .add_systems(Startup, setup_chain)
         .add_systems(Update, wall::holds::hand_on_holds_detection)
         // .add_systems(Update, move_hold)
