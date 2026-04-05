@@ -21,6 +21,7 @@ mod ui;
 mod wall;
 // mod physics;
 
+use camera::*;
 use player::*;
 use mouse::*;
 use ui::UiPlugin;
@@ -78,7 +79,7 @@ fn setup_system(
     asset_server: Res<AssetServer>,
 ) {
     // Spawn a 2D camera
-    commands.spawn((Camera2d, MainCamera));
+    commands.spawn((Camera2d, MainCamera, SmoothFollower::default()));
 
     // By default, disable the debug gizmos
     let (config, _) = config_store.config_mut::<DefaultGizmoConfigGroup>();

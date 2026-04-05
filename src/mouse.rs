@@ -7,15 +7,12 @@ use bevy::{
     window::PrimaryWindow,
 };
 
+use crate::camera::MainCamera;
+
 #[derive(Resource)]
 pub struct MousePosition {
     pub world_position: Vec2,
 }
-
-/// Used to help identify the camera that transforms screen coordinates to world coordinates.
-/// Only one camera should have this component.
-#[derive(Component)]
-pub struct MainCamera;
 
 pub struct MousePlugin;
 impl Plugin for MousePlugin {

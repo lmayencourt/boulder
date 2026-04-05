@@ -81,7 +81,6 @@ fn feet_control(
     let distance_to_target = left_foot.0.translation.distance(left_foot_target);
     let foot_is_moving = body.1.active_limb == Some(LimbType::LeftFoot);
 
-    println!("distance to target {}", distance_to_target);
     // if !left_foot.3.is_moving && distance_to_target > distance_threshold && feet_can_move{
     if !foot_is_moving && feet_can_move && distance_to_target > distance_threshold {
             left_foot.3.is_moving = true;

@@ -40,6 +40,16 @@ pub enum LimbType {
     RightFoot,
 }
 
+impl LimbType {
+    pub fn is_hand(&self) -> bool {
+        match self {
+            LimbType::LeftHand => true,
+            LimbType::RightHand => true,
+            _ => false,
+        }
+    }
+}
+
 #[derive(Component, Default)]
 pub struct Body {
     pub position: Transform,
