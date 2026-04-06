@@ -33,12 +33,23 @@ impl SwitchToRoute {
 
 pub struct Path {
     pub holds: Vec<Hold>,
+    pub params: RouteParams,
+}
+
+enum WallShape {
+    Rectangle,
+    Triangle,
+    RegularPolygon,
 }
 
 #[derive(Debug)]
 struct RouteParams {
+    seed: u64,
     height: f32,
     width: f32,
+    vertical_spacing: f32,
+    number_of_holds: u32,
+    rng: ChaCha8Rng,
 }
 
 impl RouteParams {
@@ -46,10 +57,16 @@ impl RouteParams {
         let mut rng = ChaCha8Rng::seed_from_u64(seed);
         let height = rng.random_range(ROUTE_HEIGHT_MIN..ROUTE_HEIGHT_MAX);
         let width = rng.random_range(ROUTE_WIDTH_MIN..ROUTE_WIDTH_MAX);
+        let vertical_spacing = 50.0;
+        let number_of_holds = (height/vertical_spacing) as u32;
 
         Self {
+            seed,
             height,
-            width
+            width,
+            vertical_spacing,
+            number_of_holds,
+            rng,
         }
     }
 }
@@ -58,23 +75,18 @@ impl Path {
     pub fn new(name: &str) -> Self {
         let seed = Self::name_to_seed(&name);
         info!("Seed for {} is {}", name, seed);
-        let params = RouteParams::new(seed);
+        let mut params = RouteParams::new(seed);
         info!("Creating a new route {:?}", params);
-
-        let mut rng = ChaCha8Rng::seed_from_u64(seed);
-
-        let vertical_spacing = 50.0;
-        let number_of_holds = params.height/vertical_spacing;
 
         let mut holds = Vec::new();
 
-        for i in 0..number_of_holds as i32 {
-            let x = rng.random_range(-params.width/2.0..params.width/2.0);
-            let y = i as f32 * vertical_spacing;
+        for i in 0..params.number_of_holds as i32 {
+            let x = params.rng.random_range(-params.width/2.0..params.width/2.0);
+            let y = i as f32 * params.vertical_spacing;
             holds.push(Hold::new(Vec2::new(x, y)));
         }
 
-        Self { holds }
+        Self { holds, params }
     }
 
     fn name_to_seed(name: &str) -> u64 {
@@ -88,7 +100,7 @@ impl Path {
     }
 
     pub fn spawn(
-        self,
+        &mut self,
         commands: &mut Commands,
         meshes: &mut ResMut<Assets<Mesh>>,
         materials: &mut ResMut<Assets<ColorMaterial>>,
@@ -100,6 +112,113 @@ impl Path {
         if let Some(last_hold) = self.holds.last() {
             last_hold.spawn_last(commands, meshes, materials);
         }
+
+        // Spawn some shapes to visualize the route
+        // Draw the founding blocks of the cliff
+        let shape_count = 3;
+        // The rotation is the same for all founding blocs
+        let rotation = self.params.rng.random_range(-std::f32::consts::PI/8.0..std::f32::consts::PI/8.0);
+        for idx in 0..shape_count {
+            let shape_height = self.params.height / shape_count as f32;
+            commands.spawn((
+                // height is slightly bigger than the spacing between holds, so that it overlaps with the next one, creating a continuous path to follow
+                Mesh2d(meshes.add(Rectangle::new(self.params.width * 1.2, shape_height * 1.1))),
+                MeshMaterial2d(materials.add(Color::from(RED_100).with_alpha(0.1))),
+                Transform::from_translation(Vec3::new(0.0, idx as f32 * shape_height + shape_height/2.0, 0.0))
+                    .with_rotation(Quat::from_rotation_z(rotation)),
+            ));
+
+            // Add smaller details in the founding blocks
+            let mut shapes = Self::create_shapes_in_block(
+                self,
+                Rectangle::new(self.params.width, shape_height),
+                Vec2::new(0.0, idx as f32 * shape_height + shape_height/2.0),
+                8,
+                0.2,
+            );
+            let mut details = Vec::new();
+            for (_, transform, size) in &shapes {   
+                // Add an extra layer of details with smaller shapes
+                details = Self::create_shapes_in_block(
+                    self,
+                    Rectangle::new(size.half_size.x, size.half_size.y),
+                    transform.translation.truncate(),
+                    4,
+                    std::f32::consts::PI/8.0,
+                );
+            }
+            // Combine the details with the shapes and spawn them
+            shapes.extend(details);
+            for (mesh, transform, _) in shapes {   
+                commands.spawn((
+                    Mesh2d(meshes.add(mesh)),
+                    MeshMaterial2d(materials.add(Color::from(RED_200).with_alpha(0.5))),
+                    transform,
+                ));
+            }
+            // List of possible shapes to draw for the route background
+            // let shapes = [
+            //     WallShape::Rectangle,
+            //     WallShape::Triangle,
+            //     WallShape::RegularPolygon,
+            // ];
+            // // Start with big shapes for the global route
+            // let shape_count = 2;
+            // for idx in 0..shape_count {
+            //     let shape_height = shape_height / shape_count as f32;
+            //     let x = self.params.rng.random_range(-self.params.width/2.0..self.params.width/2.0);
+            //     let shape_size = Vec2::new(self.params.width, shape_height);
+            //     let shape_pos = Vec3::new(x, idx as f32 * shape_height, 0.0);
+            //     let shape = shapes.choose(&mut self.params.rng).unwrap();
+            //     let mesh = match shape {
+            //         WallShape::Rectangle => meshes.add(Rectangle::new(shape_size.x, shape_size.y)),
+            //         WallShape::Triangle => meshes.add(Triangle2d::new(
+            //             Vec2::Y * shape_size.y,
+            //             Vec2::new(-shape_size.x/2.0, -shape_size.y/2.0),
+            //             Vec2::new(shape_size.x/2.0, -shape_size.y/2.0),
+            //         )),
+            //         WallShape::RegularPolygon => meshes.add(RegularPolygon::new(shape_size.x/2.0, 6)),
+            //     };
+            //     commands.spawn((
+            //         Mesh2d(mesh),
+            //         MeshMaterial2d(materials.add(Color::from(RED_200).with_alpha(0.3))),
+            //         Transform::from_translation(shape_pos).with_rotation(Quat::from_rotation_z(self.params.rng.random_range(0.0..std::f32::consts::TAU))),
+            //     ));
+            // }
+
+        }
+    }
+
+    fn create_shapes_in_block ( 
+        &mut self,
+        size: Rectangle,
+        pos: Vec2,
+        count: u32,
+        max_angle: f32,
+    ) -> Vec<(Mesh, Transform, Rectangle)> {
+        let mut shapes = Vec::new();
+        for _ in 0..count {
+            let shape_width = self.params.rng.random_range(size.half_size.x/4.0..size.half_size.x);
+            let shape_height = self.params.rng.random_range(size.half_size.y/4.0..size.half_size.y);
+            let x = self.params.rng.random_range(-size.half_size.x/1.2..size.half_size.x/1.2);
+            let y = self.params.rng.random_range(-size.half_size.y/1.2..size.half_size.y/1.2);
+            let rotation = self.params.rng.random_range(-max_angle..max_angle);
+            // let shape_type = self.params.rng.gen_range(0..3);
+            // let mesh = match shape_type {
+            //     0 => Mesh::from(Rectangle::new(shape_width, shape_height)),
+            //     1 => Mesh::from(Triangle2d::new(
+            //         Vec2::Y * shape_height,
+            //         Vec2::new(-shape_width/2.0, -shape_height/2.0),
+            //         Vec2::new(shape_width/2.0, -shape_height/2.0),
+            //     )),
+            //     _ => Mesh::from(RegularPolygon::new(shape_width.min(shape_height)/2.0, 6)),
+            // };
+            let mesh = Mesh::from(Rectangle::new(shape_width, shape_height));
+            let transform = Transform::from_translation(Vec3::new(pos.x + x, pos.y + y, 0.0)).with_rotation(Quat::from_rotation_z(rotation));
+            shapes.push((mesh, transform, Rectangle::new(shape_width, shape_height)));
+        }
+
+        shapes
     }
 }
 

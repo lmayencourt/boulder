@@ -54,7 +54,7 @@ fn update_wall(
         }
 
         println!("Creating a new route {}", event.route_name);
-        let path = route::Path::new(&event.route_name);
+        let mut path = route::Path::new(&event.route_name);
         path.spawn(&mut commands, &mut meshes, &mut materials);
     }
 }
