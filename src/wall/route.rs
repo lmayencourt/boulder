@@ -87,7 +87,8 @@ impl Path {
         for i in 0..params.number_of_holds as i32 {
             let x = params.rng.random_range(-params.width/2.0..params.width/2.0);
             let y = i as f32 * params.vertical_spacing;
-            holds.push(Hold::new(Vec2::new(x, y)));
+            let size = Vec2::new(params.rng.random_range(10.0..40.0), params.rng.random_range(5.0..15.0));
+            holds.push(Hold::new(Vec2::new(x, y), size));
         }
 
         Self { holds, params }
@@ -108,13 +109,20 @@ impl Path {
         commands: &mut Commands,
         meshes: &mut ResMut<Assets<Mesh>>,
         materials: &mut ResMut<Assets<ColorMaterial>>,
+        asset_server: &Res<AssetServer>,
     ) {
+        let mut hold_handles = Vec::new();
+        for idx in 20..=29 {
+            let handle = asset_server.load(format!("holds/hold_{}.png", idx));
+            hold_handles.push(handle);
+        }
         for hold in self.holds.iter().take(self.holds.len().saturating_sub(1)) {
-            hold.spawn(commands, meshes, materials);
+            let hold_sprite = self.params.rng.random_range(0..10);
+            hold.spawn(commands, meshes, materials, hold_handles[hold_sprite].clone());
         }
         // Spawn last hold
         if let Some(last_hold) = self.holds.last() {
-            last_hold.spawn_last(commands, meshes, materials);
+            last_hold.spawn_last(commands, materials, hold_handles[0].clone());
         }
 
         // Spawn some shapes to visualize the route
@@ -237,8 +245,8 @@ pub fn two_hands_on_last_holds(
     mut event_writer: EventWriter<PlayerReachedLastHold>,
     mut gizmos: Gizmos,
 ) {
-    let l_hand_on_last_hold = is_hand_on_hold(&l_hand, &last_hold, &mut gizmos);
-    let r_hand_on_last_hold = is_hand_on_hold(&r_hand, &last_hold, &mut gizmos);
+    let l_hand_on_last_hold = is_hand_on_hold(&l_hand, &last_hold, &Vec2::new(20.0, 20.0), &mut gizmos);
+    let r_hand_on_last_hold = is_hand_on_hold(&r_hand, &last_hold, &Vec2::new(20.0, 20.0), &mut gizmos);
 
     if l_hand_on_last_hold && r_hand_on_last_hold {
         println!("Player reached top!");

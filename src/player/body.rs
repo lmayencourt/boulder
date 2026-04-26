@@ -468,7 +468,7 @@ pub fn body_parts_speed_limiter(
 ) {
     for mut velocity in q_body_parts.iter_mut() {
         let speed = velocity.linvel.length();
-        let max_speed = 200.0;
+        let max_speed = 300.0;
         if speed > max_speed {
             velocity.linvel = velocity.linvel.normalize() * max_speed;
         }

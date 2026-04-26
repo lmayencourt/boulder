@@ -16,8 +16,6 @@ use crate::corbusier_colors::*;
 use crate::body::*;
 use crate::hand::{LeftHand, RightHand, HAND_SIZE};
 
-static HOLD_SIZE: Vec2 = Vec2::new(30.0, 10.0);
-
 #[derive(Resource)]
 pub struct LeftHandOnHold(pub bool);
 
@@ -33,14 +31,15 @@ pub struct RightFootClosestHold(pub Vec2);
 #[derive(Component, Clone, Copy)]
 pub struct Hold {
     pub position: Vec2,
+    pub size: Vec2,
 }
 
 #[derive(Component)]
 pub struct LastHold;
 
 impl Hold {
-    pub fn new(position: Vec2) -> Self {
-        Self { position }
+    pub fn new(position: Vec2, size: Vec2) -> Self {
+        Self { position, size }
     }
 
     pub fn spawn(
@@ -48,11 +47,16 @@ impl Hold {
         commands: &mut Commands,
         meshes: &mut ResMut<Assets<Mesh>>,
         materials: &mut ResMut<Assets<ColorMaterial>>,
+        image_handle: Handle<Image>,
     ) {
         debug!("Spawing hold at {}", self.position);
         commands.spawn((
-            Mesh2d(meshes.add(Rectangle::new(HOLD_SIZE.x, HOLD_SIZE.y))),
             MeshMaterial2d(materials.add(Color::from(COLOR_WHITE))),
+            Sprite {
+                image: image_handle.clone(),
+                custom_size: Some(self.size),
+                ..default()
+            },
             Transform::from_xyz(self.position.x, self.position.y, 0.0),
             self,
         ));
@@ -61,14 +65,18 @@ impl Hold {
     pub fn spawn_last(
         self,
         commands: &mut Commands,
-        meshes: &mut ResMut<Assets<Mesh>>,
         materials: &mut ResMut<Assets<ColorMaterial>>,
+        image_handle: Handle<Image>,
     ) {
         debug!("Spawing last hold at {}", self.position);
         commands.spawn((
-            Mesh2d(meshes.add(Rectangle::new(HOLD_SIZE.x, HOLD_SIZE.y))),
             MeshMaterial2d(materials.add(Color::from(RED_500))),
             Transform::from_xyz(self.position.x, self.position.y, 0.0),
+            Sprite {
+                image: image_handle.clone(),
+                custom_size: Some(self.size),
+                ..default()
+            },
             LastHold,
             self,
         ));
@@ -90,7 +98,7 @@ fn update_material_on<E: EntityEvent>(
 }
 
 pub fn hand_on_holds_detection(
-    mut q_holds: Query<(&mut MeshMaterial2d<ColorMaterial>, &Transform), With<Hold>>,
+    mut q_holds: Query<(&mut MeshMaterial2d<ColorMaterial>, &Transform, &Hold)>,
     q_r_hand: Query<&Transform, With<RightHand>>,
     q_l_hand: Query<&Transform, With<LeftHand>>,
     mut r_r_hand_on_hold: ResMut<RightHandOnHold>,
@@ -103,9 +111,9 @@ pub fn hand_on_holds_detection(
 
     let mut l_hand_on_any_hold = false;
     let mut r_hand_on_any_hold = false;
-    for (mut material, transform) in q_holds.iter_mut() {
-        let l_hand_on_hold = is_hand_on_hold(q_l_hand.single().unwrap(), transform, &mut gizmos);
-        let r_hand_on_hold = is_hand_on_hold(q_r_hand.single().unwrap(), transform, &mut gizmos);
+    for (mut material, transform, hold) in q_holds.iter_mut() {
+        let l_hand_on_hold = is_hand_on_hold(q_l_hand.single().unwrap(), transform, &hold.size, &mut gizmos);
+        let r_hand_on_hold = is_hand_on_hold(q_r_hand.single().unwrap(), transform, &hold.size, &mut gizmos);
 
         if l_hand_on_hold || r_hand_on_hold {
             material.0 = hover_matl.clone();
@@ -130,13 +138,14 @@ pub fn hand_on_holds_detection(
 pub fn is_hand_on_hold(
     hand_transform: &Transform,
     hold_transform: &Transform,
+    hold_size: &Vec2,
     mut gizmos: &mut Gizmos,
 ) -> bool {
     let hand_box = BoundingCircle::new(hand_transform.translation.truncate(), HAND_SIZE);
     gizmos.circle_2d(hand_transform.translation.truncate(), HAND_SIZE, Color::from(YELLOW_200));
 
-    let bounding_box = Aabb2d::new(hold_transform.translation.truncate(), HOLD_SIZE / 2.0);
-    gizmos.rect_2d(hold_transform.translation.truncate(), HOLD_SIZE, Color::from(GRAY_400));
+    let bounding_box = Aabb2d::new(hold_transform.translation.truncate(), hold_size / 2.0);
+    gizmos.rect_2d(hold_transform.translation.truncate(), *hold_size, Color::from(GRAY_400));
     hand_box.intersects(&bounding_box)
 }
 
