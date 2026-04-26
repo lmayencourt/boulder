@@ -9,6 +9,7 @@ use bevy::{
 use rand::prelude::*;
 use rand::rngs::ChaCha8Rng;
 
+use crate::corbusier_colors::*;
 use crate::hand::{LeftHand, RightHand, HAND_SIZE};
 use super::holds::*;
 
@@ -35,6 +36,9 @@ pub struct Path {
     pub holds: Vec<Hold>,
     pub params: RouteParams,
 }
+
+#[derive(Component)]
+pub struct WallPart;
 
 enum WallShape {
     Rectangle,
@@ -115,47 +119,49 @@ impl Path {
 
         // Spawn some shapes to visualize the route
         // Draw the founding blocks of the cliff
-        let shape_count = 3;
+        let shape_count = self.params.rng.random_range(2..5);
         // The rotation is the same for all founding blocs
-        let rotation = self.params.rng.random_range(-std::f32::consts::PI/8.0..std::f32::consts::PI/8.0);
         for idx in 0..shape_count {
+            let rotation = self.params.rng.random_range(-std::f32::consts::PI/8.0..std::f32::consts::PI/8.0);
             let shape_height = self.params.height / shape_count as f32;
             commands.spawn((
                 // height is slightly bigger than the spacing between holds, so that it overlaps with the next one, creating a continuous path to follow
                 Mesh2d(meshes.add(Rectangle::new(self.params.width * 1.2, shape_height * 1.1))),
-                MeshMaterial2d(materials.add(Color::from(RED_100).with_alpha(0.1))),
+                MeshMaterial2d(materials.add(COLOR_LIGHT_BROWN)),
                 Transform::from_translation(Vec3::new(0.0, idx as f32 * shape_height + shape_height/2.0, 0.0))
                     .with_rotation(Quat::from_rotation_z(rotation)),
+                WallPart,
             ));
 
             // Add smaller details in the founding blocks
-            let mut shapes = Self::create_shapes_in_block(
-                self,
-                Rectangle::new(self.params.width, shape_height),
-                Vec2::new(0.0, idx as f32 * shape_height + shape_height/2.0),
-                8,
-                0.2,
-            );
-            let mut details = Vec::new();
-            for (_, transform, size) in &shapes {   
-                // Add an extra layer of details with smaller shapes
-                details = Self::create_shapes_in_block(
-                    self,
-                    Rectangle::new(size.half_size.x, size.half_size.y),
-                    transform.translation.truncate(),
-                    4,
-                    std::f32::consts::PI/8.0,
-                );
-            }
-            // Combine the details with the shapes and spawn them
-            shapes.extend(details);
-            for (mesh, transform, _) in shapes {   
-                commands.spawn((
-                    Mesh2d(meshes.add(mesh)),
-                    MeshMaterial2d(materials.add(Color::from(RED_200).with_alpha(0.5))),
-                    transform,
-                ));
-            }
+            // let mut shapes = Self::create_shapes_in_block(
+            //     self,
+            //     Rectangle::new(self.params.width, shape_height),
+            //     Vec2::new(0.0, idx as f32 * shape_height + shape_height/2.0),
+            //     8,
+            //     0.2,
+            // );
+            // let mut details = Vec::new();
+            // for (_, transform, size) in &shapes {   
+            //     // Add an extra layer of details with smaller shapes
+            //     details = Self::create_shapes_in_block(
+            //         self,
+            //         Rectangle::new(size.half_size.x, size.half_size.y),
+            //         transform.translation.truncate(),
+            //         4,
+            //         std::f32::consts::PI/8.0,
+            //     );
+            // }
+            // // Combine the details with the shapes and spawn them
+            // shapes.extend(details);
+            // for (size, transform, _) in shapes {
+            //     let mesh = Mesh::from(Rectangle::new(size.half_size.x, size.half_size.y));
+            //     commands.spawn((
+            //         Mesh2d(meshes.add(mesh)),
+            //         MeshMaterial2d(materials.add(Color::from(RED_200).with_alpha(0.5))),
+            //         transform,
+            //     ));
+            // }
             // List of possible shapes to draw for the route background
             // let shapes = [
             //     WallShape::Rectangle,

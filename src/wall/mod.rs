@@ -8,7 +8,7 @@ pub mod holds;
 pub mod route;
 
 pub use holds::*;
-use route::{PlayerReachedLastHold, SwitchToRoute};
+use route::{PlayerReachedLastHold, SwitchToRoute, WallPart};
 
 
 pub struct WallPlugin;
@@ -45,6 +45,7 @@ fn update_wall(
     mut events: MessageReader<PlayerReachedLastHold>,
     mut evr_new_route: MessageReader<SwitchToRoute>,
     mut q_holds: Query<Entity, With<Hold>>,
+    mut q_wall: Query<Entity, (With<WallPart>, Without<Hold>)>,
 ) {
     // Spawn the new wall
     for event in evr_new_route.read() {
@@ -52,8 +53,11 @@ fn update_wall(
         for hold in q_holds.iter() {
             commands.entity(hold).despawn();
         }
+        for wall in q_wall.iter() {
+            commands.entity(wall).despawn();
+        }
 
-        println!("Creating a new route {}", event.route_name);
+        debug!("Creating a new route {}", event.route_name);
         let mut path = route::Path::new(&event.route_name);
         path.spawn(&mut commands, &mut meshes, &mut materials);
     }
