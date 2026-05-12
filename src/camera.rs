@@ -107,11 +107,11 @@ impl SmoothFollower {
 
             if *lerp_value < 0.98 {
                 *lerp_value += 0.01;
-                println!("lerp {}", *lerp_value);
+                debug!("lerp {}", *lerp_value);
             } else {
                 self.lerping = None;
                 self.current_pos = *object_to_follow;
-                println!("Reached {}", object_to_follow);
+                debug!("Reached {}", object_to_follow);
             }
         } else {
             current_pos = target_pos;

@@ -7,6 +7,7 @@ use bevy::prelude::*;
 pub mod holds;
 pub mod route;
 
+use crate::GameState;
 pub use holds::*;
 use route::{PlayerReachedLastHold, SwitchToRoute, WallPart};
 
@@ -19,7 +20,7 @@ impl Plugin for WallPlugin {
         app.add_message::<SwitchToRoute>();
         app.add_systems(Startup, setup_wall);
         app.add_systems(Update, update_wall);
-        app.add_systems(Update, route::two_hands_on_last_holds);
+        app.add_systems(Update, route::two_hands_on_last_holds.run_if(in_state(GameState::Playing)));
         app.add_systems(Update, find_foot_closest_hold);
     }
 }

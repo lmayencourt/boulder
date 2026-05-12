@@ -14,6 +14,7 @@ use bevy_prototype_lyon::prelude::*;
 
 mod camera;
 mod corbusier_colors;
+mod menu;
 mod mesh_drawing;
 mod mouse;
 mod player;
@@ -23,14 +24,18 @@ mod wall;
 
 use camera::*;
 use player::*;
+use menu::MenuPlugin;
 use mouse::*;
 use ui::UiPlugin;
+use route::PlayerReachedLastHold;
 use wall::*;
 // use physics::*;
 
 #[derive(States, Default, Debug, Clone, Eq, PartialEq, Hash)]
 enum GameState {
     #[default]
+    EnterMenu,
+    Menu,
     Playing,
     LevelSelection,
 }
@@ -44,6 +49,7 @@ fn main() {
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins(ShapePlugin)
+        .add_plugins(MenuPlugin)
         .add_plugins(MousePlugin)
         .add_plugins(UiPlugin)
         .add_plugins(PlayerPlugin)
@@ -54,6 +60,7 @@ fn main() {
         .insert_resource(wall::holds::LeftFootClosestHold(Vec2::default()))
         .insert_resource(wall::holds::RightFootClosestHold(Vec2::default()))
         .add_systems(Startup, setup_system)
+        .add_systems(Update, game_state_system)
         .add_systems(Update, camera::follow_player)
         .add_systems(Update, camera::zoom)
         // .add_systems(Startup, setup_chain)
@@ -90,10 +97,10 @@ fn setup_system(
     Body::spawn(&mut commands, &mut meshes, &mut materials, asset_server);
 
     // Spawn a box collider as ground
-    commands.spawn((
-        Collider::cuboid(500.0, 10.0),
-        Transform::from_translation(Vec3::new(0.0, -250.0, 0.0)),
-    ));
+    // commands.spawn((
+    //     Collider::cuboid(500.0, 10.0),
+    //     Transform::from_translation(Vec3::new(0.0, -250.0, 0.0)),
+    // ));
 
     // Test spawning a body like chains
 
@@ -281,5 +288,16 @@ fn toogle_gizmos_visibility(
     let (config, _) = config_store.config_mut::<DefaultGizmoConfigGroup>();
     if keys.just_pressed(KeyCode::Digit1) {
         config.enabled = !config.enabled;
+    }
+}
+
+fn game_state_system(
+    mut game_state: ResMut<NextState<GameState>>,
+    mut last_hold_reached: MessageReader<PlayerReachedLastHold>,
+) {
+    if !last_hold_reached.is_empty() {
+        // Player reached the end the wall, launch the menu
+        game_state.set(GameState::EnterMenu);
+        last_hold_reached.clear();
     }
 }
