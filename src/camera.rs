@@ -66,7 +66,7 @@ pub fn zoom(
         let multiplicative_zoom = 1. + delta_zoom;
 
         orthographic.scale = (orthographic.scale * multiplicative_zoom).clamp(
-            0.0,
+            0.1,
             10.0,
         );
     }
