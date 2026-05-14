@@ -9,6 +9,7 @@ use bevy::{
 use bevy_rapier2d::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 
+use crate::GameState;
 use crate::hand::{LeftHand, RightHand, HAND_SIZE};
 use crate::corbusier_colors::*;
 use crate::mesh_drawing::*;
@@ -38,6 +39,7 @@ pub enum LimbType {
     RightHand,
     LeftFoot,
     RightFoot,
+    BothHands,
 }
 
 impl LimbType {
@@ -45,6 +47,7 @@ impl LimbType {
         match self {
             LimbType::LeftHand => true,
             LimbType::RightHand => true,
+            LimbType::BothHands => true,
             _ => false,
         }
     }
@@ -59,6 +62,10 @@ pub struct Body {
     pub right_arm: Limb,
     pub left_leg: Limb,
     pub right_leg: Limb,
+
+    // on hold detectors
+    pub left_hand_on_hold: bool,
+    pub right_hand_on_hold: bool,
 }
 
 #[derive(Default)]
@@ -96,6 +103,7 @@ impl Body {
         let foot_handle = asset_server.load("foot.png");
 
         let body = commands.spawn((
+            // DespawnOnExit(GameState::Playing),
             Transform::from_xyz(0.0, 0.0, 0.0),
             Body::default(),
             Pickable::IGNORE,
@@ -460,6 +468,10 @@ impl Body {
             // .limits([0.0, 180.0_f32.to_radians()])
             .build();
         commands.entity(foot).insert(ImpulseJoint::new(knee, foot_joint));
+    }
+
+    pub fn is_falling(&self) -> bool {
+        !self.left_hand_on_hold && !self.right_hand_on_hold
     }
 }
 

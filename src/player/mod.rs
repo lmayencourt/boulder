@@ -60,6 +60,16 @@ fn feet_control(
     //     0.0
     // };
 
+    // Fall detection, don't do anything with the feet
+    if body.1.is_falling() {
+        commands.entity(left_foot.2).remove::<RigidBody>();
+        commands.entity(left_foot.2).insert(RigidBody::Dynamic);
+        commands.entity(right_foot.2).remove::<RigidBody>();
+        commands.entity(right_foot.2).insert(RigidBody::Dynamic);
+
+        return
+    }
+
     // let both_and_on_hold = left_hand.1.is_holding && right_hand.1.is_holding;
     let feet_can_move = body.1.active_limb.is_none();
     // let feet_can_move = feet_can_move && adapt_feet_position;
@@ -170,6 +180,7 @@ fn hands_control(
     if keys.just_pressed(KeyCode::KeyA) {
         println!("Disable gravity on left hand");
         hand_components.3.is_holding = false;
+        body.1.left_hand_on_hold = false;
         body.1.active_limb = Some(LimbType::LeftHand);
         hand::disable_gravity(&mut commands, hand_components.2);
     }
@@ -183,10 +194,12 @@ fn hands_control(
         if r_l_hand_on_hold.0 {
             println!("Grabbing hold with left hand");
             hand_components.3.is_holding = true;
+            body.1.left_hand_on_hold = true;
         } else {
             hand::enable_gravity(&mut commands, hand_components.2);
             println!("Releasing hold with left hand");
             hand_components.3.is_holding = false;
+            body.1.left_hand_on_hold = false;
         }
         body.1.active_limb = None;
         hand_components.1.linvel = Vec2::ZERO;
@@ -202,6 +215,7 @@ fn hands_control(
     if keys.just_pressed(KeyCode::KeyS) {
         println!("Disable gravity on right hand");
         hand_components.3.is_holding = false;
+        body.1.right_hand_on_hold = false;
         body.1.active_limb = Some(LimbType::RightHand);
         hand::disable_gravity(&mut commands, hand_components.2);
     }
@@ -215,10 +229,12 @@ fn hands_control(
         if r_r_hand_on_hold.0 {
             println!("Grabbing hold with right hand");
             hand_components.3.is_holding = true;
+            body.1.right_hand_on_hold = true;
         } else {
             hand::enable_gravity(&mut commands, hand_components.2);
             println!("Releasing hold with right hand");
             hand_components.3.is_holding = false;
+            body.1.right_hand_on_hold = false;
         }
         body.1.active_limb = None;
         hand_components.1.linvel = Vec2::ZERO;
