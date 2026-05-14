@@ -26,9 +26,11 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         // app.add_systems(Startup, skin::setup_body_skin);
         app.add_systems(Update, body::body_parts_speed_limiter);
-        app.add_systems(Update, hands_control.run_if(in_state(GameState::Playing)));
-        app.add_systems(Update, feet_control.run_if(in_state(GameState::Playing)));
-        app.add_systems(Update, body_control.run_if(in_state(GameState::Playing)));
+        app.add_systems(Update, (hands_control,
+            feet_control,
+            body_control,
+            fall_detection
+        ).run_if(in_state(GameState::Playing)));
         // app.add_systems(Update, skin::draw_body);
     }
 }
@@ -346,4 +348,26 @@ fn reach_smoothly_height(
     gizmos.ray_2d(ray.origin, *ray.direction * target_distance, Color::srgb(1.0, 1.0, 0.0));
 
     body_velocity.linvel = ray.direction * target_distance.min(ARM_LENGTH/2.0) * 8.0;
+}
+
+fn fall_detection(
+    mut commands: Commands,
+    body: Single<&Body>,
+    mut game_state: ResMut<NextState<GameState>>,
+    mut q_left_hand: Query<(Entity, &mut LeftHand), (Without<Body>)>,
+    mut q_right_hand: Query<(Entity, &mut RightHand), (Without<LeftHand>, Without<Body>)>,
+) {
+    if body.is_falling() {
+        info!("Player fell, end of current climb");
+        // make sure both hands are in gravity mode for the fall
+        let mut hand_components = q_right_hand.single_mut().unwrap();
+        hand::enable_gravity(&mut commands, hand_components.0);
+        let mut hand_components = q_left_hand.single_mut().unwrap();
+        hand::enable_gravity(&mut commands, hand_components.0);
+
+        // wait that the body is at the bottom of the wall before exiting
+        if body.position.translation.y < -50.0 {
+            game_state.set(GameState::EnterMenu);
+        }
+    }
 }

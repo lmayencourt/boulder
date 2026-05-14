@@ -105,7 +105,11 @@ impl Body {
         let body = commands.spawn((
             // DespawnOnExit(GameState::Playing),
             Transform::from_xyz(0.0, 0.0, 0.0),
-            Body::default(),
+            Body {
+                left_hand_on_hold: true,
+                right_hand_on_hold: true,
+                ..default()
+            },
             Pickable::IGNORE,
             RigidBody::Dynamic,
             Velocity::zero(),

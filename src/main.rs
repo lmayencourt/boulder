@@ -58,7 +58,7 @@ fn main() {
         .insert_resource(wall::holds::RightFootClosestHold(Vec2::default()))
         .add_systems(Startup, setup_system)
         .add_systems(Update, game_state_system)
-        .add_systems(Update, camera::follow_player)
+        .add_systems(Update, camera::follow_player.run_if(in_state(GameState::Playing)))
         .add_systems(Update, camera::zoom)
         .add_systems(Update, wall::holds::hand_on_holds_detection)
         .add_systems(Update, toogle_gizmos_visibility)
@@ -89,12 +89,6 @@ fn setup_system(
 
     // Spawn the body
     Body::spawn(&mut commands, &mut meshes, &mut materials, asset_server);
-
-    // Spawn a box collider as ground
-    // commands.spawn((
-    //     Collider::cuboid(500.0, 10.0),
-    //     Transform::from_translation(Vec3::new(0.0, -250.0, 0.0)),
-    // ));
 }
 
 fn toogle_gizmos_visibility(
