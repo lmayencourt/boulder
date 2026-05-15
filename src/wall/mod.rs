@@ -7,16 +7,15 @@ use bevy::prelude::*;
 pub mod holds;
 pub mod route;
 
-use crate::GameState;
+use crate::{GameState, GameStateEvent, EndOfGameReason};
 pub use holds::*;
-use route::{PlayerReachedLastHold, SwitchToRoute, WallPart};
+use route::{SwitchToRoute, WallPart};
 
 
 pub struct WallPlugin;
 
 impl Plugin for WallPlugin {
     fn build(&self, app: &mut App) {
-        app.add_message::<PlayerReachedLastHold>();
         app.add_message::<SwitchToRoute>();
         app.add_systems(Startup, setup_wall);
         app.add_systems(Update, update_wall);
@@ -46,7 +45,6 @@ fn update_wall(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     asset_server: Res<AssetServer>,
-    mut events: MessageReader<PlayerReachedLastHold>,
     mut evr_new_route: MessageReader<SwitchToRoute>,
     mut q_holds: Query<Entity, With<Hold>>,
     mut q_wall: Query<Entity, (With<WallPart>, Without<Hold>)>,

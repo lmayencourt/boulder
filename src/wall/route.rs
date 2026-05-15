@@ -10,6 +10,7 @@ use rand::prelude::*;
 use rand::rngs::ChaCha8Rng;
 
 use crate::corbusier_colors::*;
+use crate::{GameStateEvent, EndOfGameReason};
 use crate::hand::{LeftHand, RightHand, HAND_SIZE};
 use super::holds::*;
 
@@ -17,9 +18,6 @@ static ROUTE_WIDTH_MIN: f32 = 150.0;
 static ROUTE_WIDTH_MAX: f32 = ROUTE_WIDTH_MIN * 2.0;
 static ROUTE_HEIGHT_MIN: f32 = 200.0;
 static ROUTE_HEIGHT_MAX: f32 = ROUTE_HEIGHT_MIN * 10.0;
-
-#[derive(Message, Default)]
-pub struct PlayerReachedLastHold;
 
 #[derive(Message, Default)]
 pub struct SwitchToRoute {
@@ -242,7 +240,7 @@ pub fn two_hands_on_last_holds(
     l_hand: Single<&Transform, With<LeftHand>>,
     mut r_r_hand_on_hold: ResMut<RightHandOnHold>,
     mut r_l_hand_on_hold: ResMut<LeftHandOnHold>,
-    mut event_writer: EventWriter<PlayerReachedLastHold>,
+    mut event_writer: MessageWriter<GameStateEvent>,
     mut gizmos: Gizmos,
 ) {
     let l_hand_on_last_hold = is_hand_on_hold(&l_hand, &last_hold, &Vec2::new(20.0, 20.0), &mut gizmos);
@@ -250,6 +248,8 @@ pub fn two_hands_on_last_holds(
 
     if l_hand_on_last_hold && r_hand_on_last_hold {
         println!("Player reached top!");
-        event_writer.write_default();
+        event_writer.write(
+                GameStateEvent::EndOfGame(EndOfGameReason::PlayerReachedTop)
+            );
     }
 }

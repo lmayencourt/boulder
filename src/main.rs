@@ -26,16 +26,32 @@ use player::*;
 use menu::MenuPlugin;
 use mouse::*;
 use ui::UiPlugin;
-use route::PlayerReachedLastHold;
 use wall::*;
 
 #[derive(States, Default, Debug, Clone, Eq, PartialEq, Hash)]
 enum GameState {
     #[default]
-    EnterMenu,
     Menu,
     Playing,
+    EndOfGame(EndOfGameReason),
     LevelSelection,
+}
+
+#[derive(Message, Default, Debug)]
+enum GameStateEvent {
+    #[default]
+    None,
+    StartGame,
+    EndOfGame(EndOfGameReason),
+    BackToMainMenu,
+}
+
+/// Reason why the game ended
+#[derive(Default, Debug, Clone, Eq, PartialEq, Hash)]
+pub enum EndOfGameReason {
+    #[default]
+    PlayerFelt,
+    PlayerReachedTop,
 }
 
 fn main() {
@@ -57,6 +73,7 @@ fn main() {
         .insert_resource(wall::holds::LeftFootClosestHold(Vec2::default()))
         .insert_resource(wall::holds::RightFootClosestHold(Vec2::default()))
         .add_systems(Startup, setup_system)
+        .add_message::<GameStateEvent>()
         .add_systems(Update, game_state_system)
         .add_systems(Update, camera::follow_player.run_if(in_state(GameState::Playing)))
         .add_systems(Update, camera::zoom)
@@ -101,13 +118,15 @@ fn toogle_gizmos_visibility(
 
 fn game_state_system(
     mut game_state: ResMut<NextState<GameState>>,
-    mut last_hold_reached: MessageReader<PlayerReachedLastHold>,
+    mut game_event: MessageReader<GameStateEvent>,
 ) {
-    if !last_hold_reached.is_empty() {
-        // Player reached the end the wall, launch the menu
-        game_state.set(GameState::EnterMenu);
-        last_hold_reached.clear();
+    for event in game_event.read() {
+        info!("Got event {:?}", event);
+        match event {
+            GameStateEvent::None => warn!("None event was emitted"),
+            GameStateEvent::StartGame => game_state.set(GameState::Playing),
+            GameStateEvent::EndOfGame(reason) => game_state.set(GameState::EndOfGame(reason.clone())),
+            GameStateEvent::BackToMainMenu => game_state.set(GameState::Menu),
+        }
     }
-
-
 }

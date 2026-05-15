@@ -16,7 +16,7 @@ pub mod body;
 pub mod hand;
 mod skin;
 
-use crate::GameState;
+use crate::{GameState, GameStateEvent, EndOfGameReason};
 pub use body::*;
 use hand::*;
 
@@ -355,12 +355,11 @@ fn reach_smoothly_height(
 fn fall_detection(
     mut commands: Commands,
     body: Single<&Body>,
-    mut game_state: ResMut<NextState<GameState>>,
     mut q_left_hand: Query<(Entity, &mut LeftHand), (Without<Body>)>,
     mut q_right_hand: Query<(Entity, &mut RightHand), (Without<LeftHand>, Without<Body>)>,
+    mut event_writer: MessageWriter<GameStateEvent>,
 ) {
     if body.is_falling() {
-        info!("Player fell, end of current climb");
         // make sure both hands are in gravity mode for the fall
         let mut hand_components = q_right_hand.single_mut().unwrap();
         hand::enable_gravity(&mut commands, hand_components.0);
@@ -369,7 +368,9 @@ fn fall_detection(
 
         // wait that the body is at the bottom of the wall before exiting
         if body.position.translation.y < -50.0 {
-            game_state.set(GameState::EnterMenu);
+            event_writer.write(
+                GameStateEvent::EndOfGame(EndOfGameReason::PlayerFelt)
+            );
         }
     }
 }
