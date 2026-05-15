@@ -75,8 +75,6 @@ pub struct FirstHold;
 
 fn setup_system(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     mut config_store: ResMut<GizmoConfigStore>,
     asset_server: Res<AssetServer>,
 ) {
@@ -88,7 +86,7 @@ fn setup_system(
     config.enabled = false;
 
     // Spawn the body
-    Body::spawn(&mut commands, &mut meshes, &mut materials, asset_server);
+    Body::spawn(&mut commands, asset_server);
 }
 
 fn toogle_gizmos_visibility(
@@ -110,4 +108,6 @@ fn game_state_system(
         game_state.set(GameState::EnterMenu);
         last_hold_reached.clear();
     }
+
+
 }

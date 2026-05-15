@@ -85,11 +85,13 @@ pub struct RightFoot {
     pub is_moving: bool,
 }
 
+/// Marker component to spawn and despawn the body
+#[derive(Component)]
+pub struct BodyPart;
+
 impl Body {
     pub fn spawn(
-        mut commands: &mut Commands,
-        mut meshes: &mut ResMut<Assets<Mesh>>,
-        mut materials: &mut ResMut<Assets<ColorMaterial>>,
+        commands: &mut Commands,
         asset_server: Res<AssetServer>,
     ) {
 
@@ -103,6 +105,7 @@ impl Body {
         let foot_handle = asset_server.load("foot.png");
 
         let body = commands.spawn((
+            BodyPart,
             // DespawnOnExit(GameState::Playing),
             Transform::from_xyz(0.0, 0.0, 0.0),
             Body {
@@ -137,6 +140,7 @@ impl Body {
 
         // Right arm
         let shoulder = commands.spawn((
+            BodyPart,
             Transform::from_xyz(BODY_WIDTH/2.0, BODY_HEIGHT/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -174,6 +178,7 @@ impl Body {
             closed: false,
         };
         let elbow = commands.spawn((
+            BodyPart,
             Transform::from_xyz(ARM_LENGTH/2.0, 0.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -201,6 +206,7 @@ impl Body {
         commands.entity(elbow).insert(ImpulseJoint::new(shoulder, elbow_joint));
 
         let hand = commands.spawn((
+            BodyPart,
             Sprite {
                 image: hand_handle.clone(),
                 custom_size: Some(Vec2::new(HAND_HEIGHT, HAND_WIDTH)),
@@ -227,6 +233,7 @@ impl Body {
 
         // Left arm
         let shoulder = commands.spawn((
+            BodyPart,
             Transform::from_xyz(-BODY_WIDTH/2.0, BODY_HEIGHT/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -254,6 +261,7 @@ impl Body {
         commands.entity(shoulder).insert(ImpulseJoint::new(body, shoulder_joint));
 
         let elbow = commands.spawn((
+            BodyPart,
             Transform::from_xyz(-ARM_LENGTH/2.0, 0.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -281,6 +289,7 @@ impl Body {
         commands.entity(elbow).insert(ImpulseJoint::new(shoulder, elbow_joint));
 
         let hand = commands.spawn((
+            BodyPart,
             Sprite {
                 image: hand_handle.clone(),
                 custom_size: Some(Vec2::new(HAND_HEIGHT, HAND_WIDTH)),
@@ -305,6 +314,7 @@ impl Body {
         commands.entity(hand).insert(ImpulseJoint::new(elbow, elbow_joint));
 
         let hip = commands.spawn((
+            BodyPart,
             Transform::from_xyz(BODY_WIDTH/2.0, -BODY_HEIGHT/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -333,6 +343,7 @@ impl Body {
         commands.entity(hip).insert(ImpulseJoint::new(body, hip_joint));
 
         let knee = commands.spawn((
+            BodyPart,
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT + LEG_LENGTH/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -360,6 +371,7 @@ impl Body {
         commands.entity(knee).insert(ImpulseJoint::new(hip, knee_joint));
 
         let foot = commands.spawn((
+            BodyPart,
             Transform::from_xyz(BODY_WIDTH/2.0, -BODY_HEIGHT - LEG_LENGTH, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -392,6 +404,7 @@ impl Body {
 
         // Left leg
         let hip = commands.spawn((
+            BodyPart,
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -418,6 +431,7 @@ impl Body {
         commands.entity(hip).insert(ImpulseJoint::new(body, hip_joint));
 
         let knee = commands.spawn((
+            BodyPart,
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT + LEG_LENGTH/2.0, 0.0),
             Pickable::IGNORE,
             RigidBody::Dynamic,
@@ -444,6 +458,7 @@ impl Body {
         commands.entity(knee).insert(ImpulseJoint::new(hip, knee_joint));
 
         let foot = commands.spawn((
+            BodyPart,
             Transform::from_xyz(-BODY_WIDTH/2.0, -BODY_HEIGHT - LEG_LENGTH, 0.0),
             Pickable::IGNORE,
             // RigidBody::Dynamic,

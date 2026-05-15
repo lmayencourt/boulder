@@ -25,7 +25,9 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         // app.add_systems(Startup, skin::setup_body_skin);
-        app.add_systems(Update, body::body_parts_speed_limiter);
+        app.add_systems(Update, (body::body_parts_speed_limiter,
+            respawn_player)
+        );
         app.add_systems(Update, (hands_control,
             feet_control,
             body_control,
@@ -369,5 +371,22 @@ fn fall_detection(
         if body.position.translation.y < -50.0 {
             game_state.set(GameState::EnterMenu);
         }
+    }
+}
+
+fn respawn_player(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    body_pos: Single<&Transform, With<Body>>,
+    q_body_parts: Query<(Entity), With<BodyPart>>,
+) {
+    if body_pos.translation.y < -500.0 {
+        // Clear the body
+        for part in q_body_parts.iter() {
+            commands.entity(part).despawn();
+        }
+        
+        // Respawn it
+        Body::spawn(&mut commands, asset_server);
     }
 }
