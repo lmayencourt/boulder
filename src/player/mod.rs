@@ -26,12 +26,12 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         // app.add_systems(Startup, skin::setup_body_skin);
         app.add_systems(Update, (body::body_parts_speed_limiter,
+            feet_control,
             respawn_player)
         );
         app.add_systems(Update, (hands_control,
-            feet_control,
             body_control,
-            fall_detection
+            fall_detection,
         ).run_if(in_state(GameState::Playing)));
         // app.add_systems(Update, skin::draw_body);
     }
@@ -58,14 +58,10 @@ fn feet_control(
 
     let distance_threshold = 8.0;
     let foot_offset = 0.0;
-    // let foot_offset = if keys.pressed(KeyCode::Space) {
-    //     LEG_LENGTH/3.0
-    // } else {
-    //     0.0
-    // };
 
     // Fall detection, don't do anything with the feet
     if body.1.is_falling() {
+        info!("Enable feet gravity");
         commands.entity(left_foot.2).remove::<RigidBody>();
         commands.entity(left_foot.2).insert(RigidBody::Dynamic);
         commands.entity(right_foot.2).remove::<RigidBody>();

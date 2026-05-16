@@ -11,7 +11,8 @@ use rand::rngs::ChaCha8Rng;
 
 use crate::corbusier_colors::*;
 use crate::{GameStateEvent, EndOfGameReason};
-use crate::hand::{LeftHand, RightHand, HAND_SIZE};
+use crate::Body;
+use crate::hand::{LeftHand, RightHand, HAND_SIZE, enable_gravity};
 use super::holds::*;
 
 static ROUTE_WIDTH_MIN: f32 = 150.0;
@@ -235,19 +236,27 @@ impl Path {
 }
 
 pub fn two_hands_on_last_holds(
+    mut commands: Commands,
     mut last_hold: Single<(&Transform), With<LastHold>>,
-    r_hand: Single<&Transform, With<RightHand>>,
-    l_hand: Single<&Transform, With<LeftHand>>,
+    r_hand: Single<(&Transform, Entity), With<RightHand>>,
+    l_hand: Single<(&Transform, Entity), With<LeftHand>>,
     mut r_r_hand_on_hold: ResMut<RightHandOnHold>,
     mut r_l_hand_on_hold: ResMut<LeftHandOnHold>,
     mut event_writer: MessageWriter<GameStateEvent>,
+    mut body: Single<&mut Body>,
     mut gizmos: Gizmos,
 ) {
-    let l_hand_on_last_hold = is_hand_on_hold(&l_hand, &last_hold, &Vec2::new(20.0, 20.0), &mut gizmos);
-    let r_hand_on_last_hold = is_hand_on_hold(&r_hand, &last_hold, &Vec2::new(20.0, 20.0), &mut gizmos);
+    let l_hand_on_last_hold = is_hand_on_hold(&l_hand.0, &last_hold, &Vec2::new(20.0, 20.0), &mut gizmos);
+    let r_hand_on_last_hold = is_hand_on_hold(&r_hand.0, &last_hold, &Vec2::new(20.0, 20.0), &mut gizmos);
 
     if l_hand_on_last_hold && r_hand_on_last_hold {
-        println!("Player reached top!");
+        info!("Player reached top!");
+        // make sure both hands are in gravity mode for the fall
+        enable_gravity(&mut commands, r_hand.1);
+        enable_gravity(&mut commands, l_hand.1);
+        body.left_hand_on_hold = false;
+        body.right_hand_on_hold = false;
+
         event_writer.write(
                 GameStateEvent::EndOfGame(EndOfGameReason::PlayerReachedTop)
             );
