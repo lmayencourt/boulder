@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+        
+        <title>Boulder</title>
+        <style>/* Copied from: https://github.com/NiklasEi/bevy_game_template/blob/main/build/web/styles.css */
+
+body, html {
+    height: 100%;
+}
+
+body {
+    background-color: rgb(100, 100, 100);
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.game-container {
+    /* width: 800px;
+    height: 600px; */
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.lds-dual-ring {
+    display: inline-block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin: auto;
+    width: 80px;
+    height: 80px;
+}
+
+.lds-dual-ring:after {
+    content: " ";
+    display: block;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 6px solid #fff;
+    border-color: #fff transparent #fff transparent;
+    animation: lds-dual-ring 1.2s linear infinite;
+}
+
+@keyframes lds-dual-ring {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+#bevy {
+    z-index: 2;
+}</style>
+    <link rel="modulepreload" href="./climbing-47309707d1d5727.js" crossorigin="anonymous" integrity="sha384-YDthgiJ9G5mIcNmG8rHEnrvJ2y7F0HP3G+yXx9vEHIpvjAr7qeCFcYdBey2FYiGf"><link rel="preload" href="./climbing-47309707d1d5727_bg.wasm" crossorigin="anonymous" integrity="sha384-j5CZmjbE2kRx4e/0aljYrvYH3pqvaEEuCzR7zGAdzWYoodAev4NuNWD1mO+C2ZHX" as="fetch" type="application/wasm"></head>
+    <body>
+        <!-- <link data-trunk rel="inline" href="web-build/sounds.js"/> -->
+        <div class="game-container">
+            <div class="lds-dual-ring"></div>
+            <canvas id="bevy">
+                Javascript and support for canvas is required
+            </canvas>
+        </div>
+    
+<script type="module">
+import init, * as bindings from './climbing-47309707d1d5727.js';
+const wasm = await init({ module_or_path: './climbing-47309707d1d5727_bg.wasm' });
+
+
+window.wasmBindings = bindings;
+
+
+dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
+
+</script></body>
+</html>
