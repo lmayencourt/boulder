@@ -56,7 +56,21 @@ pub enum EndOfGameReason {
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins
+            .set(ImagePlugin::default_nearest()) // prevents blurry sprites
+            .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "Boulder".to_string(),
+                        // Bind to canvas included in `index.html`
+                        canvas: Some("#bevy".to_owned()),
+                        fit_canvas_to_parent: true,
+                        // Tells wasm not to override default event handling, like F5 and Ctrl+R
+                        prevent_default_event_handling: false,
+                        ..default()
+                    }),
+                    ..default()
+                })
+            )
         .add_plugins(MeshPickingPlugin)
         .add_plugins((EmbeddedAssetPlugin::default()))
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))

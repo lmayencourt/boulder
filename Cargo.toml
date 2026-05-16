@@ -8,6 +8,7 @@ bevy = "0.17.3"
 bevy_rapier2d = "0.32"
 bevy_prototype_lyon = "=0.15.0"
 bevy_embedded_assets = "0.14"
+getrandom = {version = "0.4.1", features = ["wasm_js"]}
 rand = {version="0.10.0", features = ["chacha"]}
 
 # Enable a small amount of optimization in debug mode

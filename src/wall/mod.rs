@@ -32,7 +32,7 @@ fn setup_wall(
     asset_server: Res<AssetServer>,
 ) {
     // Spawn the first hold at 0, 0
-    let handle = asset_server.load("holds/hold_20.png");
+    let handle = asset_server.load("embedded://holds/hold_20.png");
     let hold = Hold::new(Vec2::new(0.0, 0.0), Vec2::new(20.0, 20.0));
     hold.spawn(&mut commands, &mut meshes, &mut materials, handle);
 

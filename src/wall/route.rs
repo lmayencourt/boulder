@@ -112,7 +112,7 @@ impl Path {
     ) {
         let mut hold_handles = Vec::new();
         for idx in 20..=29 {
-            let handle = asset_server.load(format!("holds/hold_{}.png", idx));
+            let handle = asset_server.load(format!("embedded://holds/hold_{}.png", idx));
             hold_handles.push(handle);
         }
         for hold in self.holds.iter().take(self.holds.len().saturating_sub(1)) {

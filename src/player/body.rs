@@ -95,14 +95,14 @@ impl Body {
         asset_server: Res<AssetServer>,
     ) {
 
-        let body_handle = asset_server.load("torso.png");
-        let head_handle = asset_server.load("head.png");
-        let forarm_handle = asset_server.load("forarm.png");
-        let arm_handle = asset_server.load("arm.png");
-        let hand_handle = asset_server.load("hand.png");
-        let thigh_handle = asset_server.load("thigh.png");
-        let calf_handle = asset_server.load("calf.png");
-        let foot_handle = asset_server.load("foot.png");
+        let body_handle = asset_server.load("embedded://torso.png");
+        let head_handle = asset_server.load("embedded://head.png");
+        let forarm_handle = asset_server.load("embedded://forarm.png");
+        let arm_handle = asset_server.load("embedded://arm.png");
+        let hand_handle = asset_server.load("embedded://hand.png");
+        let thigh_handle = asset_server.load("embedded://thigh.png");
+        let calf_handle = asset_server.load("embedded://calf.png");
+        let foot_handle = asset_server.load("embedded://foot.png");
 
         let body = commands.spawn((
             BodyPart,
