@@ -2,16 +2,10 @@
 * Copyright (c) 2026 Louis Mayencourt
 */
 
-use bevy::{
-    prelude::*,
-    input::ButtonState,
-    input::keyboard::{Key, KeyboardInput},
-    color::palettes::tailwind::*,
-};
+use bevy::prelude::*;
 
-use crate::GameState;
 use crate::player::Body;
-use crate::wall::route::SwitchToRoute;
+use crate::menu::LevelSelector;
 
 pub struct UiPlugin;
 
@@ -21,18 +15,16 @@ pub struct CurrentPlayerHeight(f32);
 #[derive(Component)]
 struct CurrentHeightText;
 
-#[derive(Default, PartialEq)]
-enum LevelEditingMode {
-    #[default]
-    Disable,
-    Enable,
-}
+/// Marker component to retrieve the current route text field
+#[derive(Component)]
+struct CurrentRouteName;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(CurrentPlayerHeight(0.0));
         app.add_systems(Startup,setup_ui);
-        app.add_systems(Update, update_current_height);
+        app.add_systems(Update, (update_current_height,
+            display_route_name));
     }
 }
 
@@ -56,6 +48,7 @@ fn setup_ui(
             left: px(12),
             ..default()
         },
+        CurrentRouteName,
     ));
 }
 
@@ -64,4 +57,11 @@ fn update_current_height(
     body: Single<&mut Transform, With<Body>>,
 ) {
     text.0 = format!("Current height: {:.1}", body.translation.y);
+}
+
+fn display_route_name(
+    mut text: Single<&mut Text, With<CurrentRouteName>>,
+    level_selector: Res<LevelSelector>,
+) {
+    text.0 = level_selector.current_level.clone();
 }

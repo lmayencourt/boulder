@@ -31,6 +31,10 @@ enum MenuButtonAction {
 #[derive(Component)]
 struct SelectedOption;
 
+/// Newtype to use a `Timer` as a count down before redrawing the wall after user input
+#[derive(Resource, Deref, DerefMut)]
+struct RefreshWall(Timer);
+
 pub struct MenuPlugin;
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
@@ -39,6 +43,7 @@ impl Plugin for MenuPlugin {
                     current_level: String::from("First challenge"),
                     ..default()
                 });
+        app.insert_resource(RefreshWall(Timer::from_seconds(1.0, TimerMode::Once)));
         app.add_systems(OnEnter(GameState::Menu), welcome_screen_setup);
         app.add_systems(OnEnter(GameState::EndOfGame(EndOfGameReason::PlayerFelt)), player_fell_menu);
         app.add_systems(OnEnter(GameState::EndOfGame(EndOfGameReason::PlayerReachedTop)), player_reached_top_menu);
@@ -250,7 +255,7 @@ fn menu_action(
     mut app_exit_writer: MessageWriter<AppExit>,
     mut game_event: MessageWriter<GameStateEvent>,
     mut evw_new_route: MessageWriter<SwitchToRoute>,
-    level_selector: Res<LevelSelector>,
+    mut level_selector: ResMut<LevelSelector>,
 ) {
     for (interaction, menu_button_action) in &interaction_query {
         if *interaction == Interaction::Pressed {
@@ -260,7 +265,7 @@ fn menu_action(
                     app_exit_writer.write(AppExit::Success);
                 },
                 MenuButtonAction::Play => {
-                    start_climbing(&level_selector.current_level, &mut game_event, &mut evw_new_route);
+                    start_climbing(&mut level_selector, &mut game_event, &mut evw_new_route);
                 },
                 MenuButtonAction::ToMainMenu => {
                     info!("Back to main menu pressed");
@@ -273,9 +278,8 @@ fn menu_action(
 
 /// Contains the user defined level name info
 #[derive(Resource, Default)]
-struct LevelSelector {
+pub struct LevelSelector {
     pub current_level: String,
-    pub user_input: String,
 }
 
 /// Marker component to retrieve the Text field that display the level name 
@@ -289,8 +293,10 @@ fn level_selector_system(
     mut evr_keyboard: MessageReader<KeyboardInput>,
     mut game_event: MessageWriter<GameStateEvent>,
     mut evw_new_route: MessageWriter<SwitchToRoute>,
+    time: Res<Time>,
+    mut timer: ResMut<RefreshWall>,
 ) {
-    level_selector_text.0 = level_selector.user_input.clone();
+    level_selector_text.0 = level_selector.current_level.clone();
 
     for ev in evr_keyboard.read() {
         if ev.state == ButtonState::Released {
@@ -298,29 +304,35 @@ fn level_selector_system(
         }
         match &ev.logical_key {
             Key::Enter => {
-                    level_selector.current_level = level_selector.user_input.clone();
-                    level_selector.user_input = String::default();
-                    start_climbing(&level_selector.current_level, &mut game_event, &mut evw_new_route);
+                    start_climbing(&mut level_selector, &mut game_event, &mut evw_new_route);
             }
             Key::Backspace => {
-                level_selector.user_input.pop();
+                level_selector.current_level.pop();
+            }
+            Key::Space => {
+                level_selector.current_level.push_str(" ");
             }
             Key::Character(user_input) => {
                 debug!("New char {}", &user_input);
-                level_selector.user_input.push_str(user_input);
+                level_selector.current_level.push_str(user_input);
+                *timer = RefreshWall(Timer::from_seconds(0.5, TimerMode::Once));
             },
             _ => {},
         }
+    }
+
+    if timer.tick(time.delta()).just_finished() {
+        evw_new_route.write(SwitchToRoute::new(level_selector.current_level.clone()));
     }
 }
 
 /// Start the game by exiting the menu state and switching to the new route
 fn start_climbing(
-    route_name: &str,
+    level_selector: &mut LevelSelector,
     game_event: &mut MessageWriter<GameStateEvent>,
     evw_new_route: &mut MessageWriter<SwitchToRoute>,
 ) {
-    info!("Switching to new level {}", route_name);
+    info!("Switching to new level {}", level_selector.current_level);
+    evw_new_route.write(SwitchToRoute::new(level_selector.current_level.clone()));
     game_event.write(GameStateEvent::StartGame);
-    evw_new_route.write(SwitchToRoute::new(route_name.to_string()));
 }
