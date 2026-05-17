@@ -1,11 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8"/>
+<!DOCTYPE html><html lang="en"><head>
+        <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
         
         <title>Boulder</title>
-        <style>/* Copied from: https://github.com/NiklasEi/bevy_game_template/blob/main/build/web/styles.css */
+        <style type="text/css">/* Copied from: https://github.com/NiklasEi/bevy_game_template/blob/main/build/web/styles.css */
 
 body, html {
     height: 100%;
@@ -61,7 +59,9 @@ body {
 #bevy {
     z-index: 2;
 }</style>
-    <link rel="modulepreload" href="./climbing-47309707d1d5727.js" crossorigin="anonymous" integrity="sha384-YDthgiJ9G5mIcNmG8rHEnrvJ2y7F0HP3G+yXx9vEHIpvjAr7qeCFcYdBey2FYiGf"><link rel="preload" href="./climbing-47309707d1d5727_bg.wasm" crossorigin="anonymous" integrity="sha384-j5CZmjbE2kRx4e/0aljYrvYH3pqvaEEuCzR7zGAdzWYoodAev4NuNWD1mO+C2ZHX" as="fetch" type="application/wasm"></head>
+    
+<link rel="preload" href="./climbing-d71c056277be73ef_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
+<link rel="modulepreload" href="./climbing-d71c056277be73ef.js"></head>
     <body>
         <!-- <link data-trunk rel="inline" href="web-build/sounds.js"/> -->
         <div class="game-container">
@@ -71,15 +71,4 @@ body {
             </canvas>
         </div>
     
-<script type="module">
-import init, * as bindings from './climbing-47309707d1d5727.js';
-const wasm = await init({ module_or_path: './climbing-47309707d1d5727_bg.wasm' });
-
-
-window.wasmBindings = bindings;
-
-
-dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
-
-</script></body>
-</html>
+<script type="module">import init from './climbing-d71c056277be73ef.js';init('./climbing-d71c056277be73ef_bg.wasm');</script></body></html>
